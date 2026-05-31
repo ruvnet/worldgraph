@@ -13,7 +13,9 @@
 use std::path::PathBuf;
 use std::time::Duration;
 
+#[cfg(unix)]
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+#[cfg(unix)]
 use tokio::net::UnixStream;
 use tokio::time::timeout;
 
@@ -27,7 +29,8 @@ const TIMEOUT_S: u64 = 30;
 ///
 /// 200×200×16 future frames × 15 steps × ~1 byte/voxel = ~9.6 MB in the
 /// worst case; set a generous 64 MB ceiling to stay safe without allocating
-/// it up front.
+/// it up front. (Only used by the unix socket reader.)
+#[cfg(unix)]
 const MAX_RESPONSE_BYTES: usize = 64 * 1024 * 1024;
 
 /// Thin async client for the OccWorld Unix-socket inference server.
@@ -65,8 +68,23 @@ impl OccWorldBridge {
         .map_err(|_| WorldModelError::Timeout { timeout_s: TIMEOUT_S })?
     }
 
+    /// Non-unix platforms have no Unix-domain sockets. The OccWorld bridge is a
+    /// Linux-appliance feature (the Python inference server runs on the GPU host),
+    /// so on Windows/other targets the crate still compiles but `predict` fails
+    /// fast with a clear error instead of silently degrading.
+    #[cfg(not(unix))]
+    async fn send_recv(
+        &self,
+        _request: OccupancyWorldModelRequest,
+    ) -> Result<OccupancyWorldModelResponse, WorldModelError> {
+        Err(WorldModelError::Protocol(
+            "OccWorld Unix-socket bridge is only supported on unix targets".into(),
+        ))
+    }
+
     /// Internal: connect, write request, read response — no timeout here;
     /// the outer [`timeout`] in [`predict`] handles that.
+    #[cfg(unix)]
     async fn send_recv(
         &self,
         request: OccupancyWorldModelRequest,
@@ -129,6 +147,7 @@ impl OccWorldBridge {
     }
 
     /// Establishes a [`UnixStream`] connection to `self.socket_path`.
+    #[cfg(unix)]
     async fn connect(&self) -> Result<UnixStream, WorldModelError> {
         UnixStream::connect(&self.socket_path)
             .await
@@ -161,6 +180,8 @@ mod tests {
     }
 
     /// Verify that a missing socket returns `SocketConnect` and not a panic.
+    /// Unix-only: non-unix targets return a `Protocol` "unsupported" error instead.
+    #[cfg(unix)]
     #[tokio::test]
     async fn connect_to_missing_socket_returns_error() {
         let bridge = OccWorldBridge::new("/tmp/__occworld_nonexistent_test__.sock");
