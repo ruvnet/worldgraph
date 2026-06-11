@@ -201,6 +201,47 @@ impl WorldGraph {
         id
     }
 
+    /// Retention: evict the oldest `SemanticState` nodes (with their incident
+    /// edges) until at most `max_states` remain. Returns the evicted ids,
+    /// oldest first.
+    ///
+    /// The live loop appends one belief per cycle (`StreamingEngine::
+    /// process_cycle`), which at 20 Hz is ~1.7M nodes/day — unbounded without
+    /// this. The WorldGraph holds *current* beliefs; durable history belongs to
+    /// the recorder (`homecore-recorder`), so evicting old beliefs loses no
+    /// audit data.
+    ///
+    /// Deterministic: eviction order is ascending `(valid_from_unix_ms, id)`,
+    /// so replaying the same cycle sequence prunes identically. Only
+    /// `SemanticState` nodes are eligible — rooms, zones, sensors, anchors,
+    /// person tracks, and events are never evicted by this method.
+    pub fn prune_semantic_states(&mut self, max_states: usize) -> Vec<WorldId> {
+        let mut states: Vec<(i64, u64)> = self
+            .inner
+            .node_weights()
+            .filter_map(|n| match n {
+                WorldNode::SemanticState { id, valid_from_unix_ms, .. } => {
+                    Some((*valid_from_unix_ms, id.0))
+                }
+                _ => None,
+            })
+            .collect();
+        if states.len() <= max_states {
+            return Vec::new();
+        }
+        states.sort_unstable();
+        let n_evict = states.len() - max_states;
+        states.truncate(n_evict);
+        states
+            .into_iter()
+            .map(|(_, raw)| {
+                let id = WorldId(raw);
+                self.remove_node(id);
+                id
+            })
+            .collect()
+    }
+
     /// Record a contradiction between two still-live beliefs (ADR-139 §2.3).
     /// Neither node is deleted — the disagreement stays queryable.
     ///
@@ -422,6 +463,56 @@ mod tests {
         // Both beliefs retained; contradiction queryable.
         assert!(g.node(s1).is_some() && g.node(s2).is_some());
         assert!(g.neighbors(s1).iter().any(|(_, e)| matches!(e, WorldEdge::Contradicts { .. })));
+    }
+
+    #[test]
+    fn prune_semantic_states_evicts_oldest_only() {
+        let mut g = WorldGraph::new(GeoRegistration::default());
+        let room = g.upsert_node(living_room());
+        let prov = SemanticProvenance {
+            evidence: vec!["ev:abc".into()],
+            model_version: "rfenc-1.0".into(),
+            calibration_version: "cal:uuid".into(),
+            privacy_decision: "PrivateHome/Allow".into(),
+        };
+        let ids: Vec<WorldId> = (0..10)
+            .map(|t| g.add_semantic_state(format!("s{t}"), 0.9, t, prov.clone(), &[room]))
+            .collect();
+        assert_eq!(g.node_count(), 11); // room + 10 beliefs
+
+        let evicted = g.prune_semantic_states(3);
+        // Oldest 7 evicted, in ascending timestamp order.
+        assert_eq!(evicted, ids[..7].to_vec());
+        assert_eq!(g.node_count(), 4); // room + 3 newest beliefs
+        for kept in &ids[7..] {
+            assert!(g.node(*kept).is_some());
+        }
+        // The room (structural node) is never eligible for eviction.
+        assert!(g.node(room).is_some());
+        // Below the cap, pruning is a no-op.
+        assert!(g.prune_semantic_states(3).is_empty());
+    }
+
+    #[test]
+    fn prune_is_deterministic_for_equal_timestamps() {
+        let prov = SemanticProvenance {
+            evidence: vec![],
+            model_version: "m".into(),
+            calibration_version: "c".into(),
+            privacy_decision: "p".into(),
+        };
+        let build = || {
+            let mut g = WorldGraph::new(GeoRegistration::default());
+            let room = g.upsert_node(living_room());
+            for _ in 0..6 {
+                // Identical timestamps: tie-break must fall back to id order.
+                g.add_semantic_state("s".into(), 0.5, 100, prov.clone(), &[room]);
+            }
+            g
+        };
+        let mut g1 = build();
+        let mut g2 = build();
+        assert_eq!(g1.prune_semantic_states(2), g2.prune_semantic_states(2));
     }
 
     #[test]
