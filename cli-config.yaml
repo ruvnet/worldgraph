@@ -1,0 +1,6 @@
+# Hermes Agent config for worldgraph — subset of cli-config.yaml.example.
+model:
+  provider: "auto"
+agent:
+  personalities:
+    worldgraph: "AI coding agent for building digital twins with worldgraph — architect, implement, review, and test the Rust spatial/sensor-graph crates"

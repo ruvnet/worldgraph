@@ -1,0 +1,11 @@
+{
+  "worldgraph": {
+    "command": "npx",
+    "args": [
+      "-y",
+      "worldgraph@latest",
+      "mcp",
+      "start"
+    ]
+  }
+}

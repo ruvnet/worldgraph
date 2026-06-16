@@ -1,3 +1,6 @@
 /target
 Cargo.lock
 .claude-flow/
+node_modules/
+dist/
+.npmrc

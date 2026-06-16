@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "generator": "0.1.0",
+  "template": "vertical:coding",
+  "template_version": "0.0.0",
+  "vars": {
+    "name": "worldgraph",
+    "description": "AI coding agent for building digital twins with worldgraph — architect, implement, review, and test the Rust spatial/sensor-graph crates",
+    "host": "multi"
+  },
+  "hosts": [
+    "claude-code",
+    "codex",
+    "pi-dev",
+    "hermes",
+    "openclaw",
+    "rvm",
+    "copilot",
+    "opencode",
+    "github-actions"
+  ],
+  "files": {
+    ".claude/commands/doctor.md": "2f1475fa0ed34729cb2ed9d6cecf29e99781da0a56afef133361e3ff0a17bb52",
+    ".claude/commands/review-diff.md": "2ab52f01487bfe67335f4de5193d7a6fb0f72f646411114613d8fa5da071ef2b",
+    ".claude/settings.json": "4bf373c35177838a1033b843164877b0f28db053eb6908354e97f0a7b099cd59",
+    ".claude/skills/plan-change/SKILL.md": "84e1c44ca264b999ebf80cd8fa0e5ebf554275bbd8023b1530ad053a44482e30",
+    ".claude-plugin/plugin.json": "5732622d51853a46f9aff3b0733e5c76eb637bcd15811372713d6d61935c965d",
+    "bin/cli.js": "593e64ba5769fd9b629008d77ddb8b9a5433cd0cd0d3b43d47814533ea326ddc",
+    "CLAUDE.md": "4363b75205ed6d241649134b78106aebc5334ab86211e7e1ea57487505a3bb9c",
+    "package.json": "e9bf89d0c29c872eadc7347c7ce73dd300fd76a019dc8cb3220fd0aa66c5e215",
+    "README.md": "4dbe4cb20e233fc937b246964950635fcf8eb09a0ecced2ee6f4813d542b01a3",
+    "src/agents/architect.ts": "02ce5286f07d3acf3d15d51e57b0c3731861d9cc6edca4cc763d5c0760866adc",
+    "src/agents/implementer.ts": "0edef4faac025c663df33d7939e07520c01fb61adb9abf8c7e74e8590e423b58",
+    "src/agents/reviewer.ts": "cef3e5b34402674b27ee26337085fc63f122eb51ccdc11d05d394cc8919ff08a",
+    "src/agents/test-writer.ts": "fe9ad3adabd701a3e16434dea498858f7a09d6f68f501d0c6097d6eab299ceff",
+    "src/init.ts": "d049a1548a064b0c584eeeeda090f33b6be1464d5a2a555a946027b235e60623",
+    "tsconfig.json": "8b4e730a1aa39162ac574455d7a98e1881f5313ca80ffe503b9652dcf0c76b9d",
+    "__tests__/smoke.test.ts": "b7c03d9335876b7b58a1447ba4fadf604dda6b537d2d831da80067c2b1461711"
+  },
+  "generated_at": "2026-06-16T21:04:32.806Z",
+  "meta": {
+    "surface": "cli"
+  }
+}

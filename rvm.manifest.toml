@@ -1,0 +1,4 @@
+[harness]
+name = "worldgraph"
+isolation = "hardware"
+witness = "ed25519"

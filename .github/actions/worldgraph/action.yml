@@ -1,0 +1,10 @@
+name: worldgraph
+description: "AI coding agent for building digital twins with worldgraph — architect, implement, review, and test the Rust spatial/sensor-graph crates"
+inputs:
+  task: { description: The task for the harness., required: true }
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: echo "Running worldgraph (non-interactive)…"
+      env: { TASK: "${{ inputs.task }}" }

@@ -1,0 +1,24 @@
+{
+  "servers": {
+    "worldgraph": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "worldgraph@latest",
+        "mcp",
+        "start"
+      ]
+    }
+  },
+  "mcpServers": {
+    "worldgraph": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "worldgraph@latest",
+        "mcp",
+        "start"
+      ]
+    }
+  }
+}

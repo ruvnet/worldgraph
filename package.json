@@ -1,0 +1,77 @@
+{
+  "name": "worldgraph",
+  "version": "0.1.1",
+  "description": "AI coding agent for building digital twins with worldgraph — architect, implement, review, and test the Rust spatial/sensor-graph crates",
+  "type": "module",
+  "bin": {
+    "worldgraph": "bin/cli.js"
+  },
+  "files": [
+    "bin/**",
+    "dist/**",
+    "src/**",
+    ".harness/**",
+    "tsconfig.json",
+    "README.md",
+    "CLAUDE.md",
+    "AGENTS.md",
+    "SYSTEM.md",
+    "LICENSE*",
+    "install.md",
+    ".claude/**",
+    ".claude-plugin/**",
+    ".codex/**",
+    ".openclaw/**",
+    ".opencode/**",
+    ".vscode/**",
+    ".github/copilot-instructions.md",
+    "cli-config.yaml",
+    "optional-mcps/**",
+    "trust.json",
+    "rvm.manifest.toml",
+    "capability-table.json"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "init": "node ./bin/cli.js init",
+    "doctor": "node ./bin/cli.js doctor",
+    "prepare": "tsc"
+  },
+  "dependencies": {
+    "@metaharness/kernel": "^0.1.0",
+    "@metaharness/host-claude-code": "^0.1.1",
+    "@metaharness/host-codex": "^0.1.1",
+    "@metaharness/host-pi-dev": "^0.1.1",
+    "@metaharness/host-hermes": "^0.1.1",
+    "@metaharness/host-openclaw": "^0.1.1",
+    "@metaharness/host-rvm": "^0.1.1",
+    "@metaharness/host-copilot": "^0.1.1",
+    "@metaharness/host-opencode": "^0.1.1",
+    "@metaharness/host-github-actions": "^0.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "keywords": [
+    "digital-twin",
+    "world-model",
+    "spatial-computing",
+    "environmental-monitoring",
+    "knowledge-graph",
+    "sensor-fusion",
+    "ambient-intelligence",
+    "ai-agent",
+    "agent-harness",
+    "coding-agent",
+    "rust",
+    "wifi-sensing",
+    "occupancy",
+    "provenance"
+  ]
+}
