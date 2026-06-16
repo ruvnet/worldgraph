@@ -5,11 +5,11 @@
 `worldgraph` is two things in one project:
 
 1. **A Rust library** that models a physical space as a typed, provenance-tracked graph — rooms, zones, sensors, people, and *beliefs* about what's happening — geospatially grounded and able to **forecast occupancy**.
-2. **An AI coding agent** (`npx ruvnet/worldgraph`) — architect → implement → review → test — that helps you build digital twins and spatial/sensor applications on top of it.
+2. **An AI coding agent** (`npx worldgraphs`) — architect → implement → review → test — that helps you build digital twins and spatial/sensor applications on top of it.
 
 <sub>**Keywords:** digital twin · world model · environmental digital twin · spatial computing · indoor positioning · sensor fusion · occupancy modeling · ambient intelligence · knowledge graph · scene graph · WiFi sensing · RF sensing · privacy-by-design · provenance · geospatial · occupancy forecasting · Rust · AI coding agent · agent harness</sub>
 
-[![run with npx](https://img.shields.io/badge/run-npx%20ruvnet%2Fworldgraph-black.svg)](#-the-ai-agent--npx-ruvnetworldgraph)
+[![npm](https://img.shields.io/npm/v/worldgraphs.svg)](https://www.npmjs.com/package/worldgraphs)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](#license)
 [![Rust](https://img.shields.io/badge/rust-stable-orange.svg)](#-the-library--rust-crates)
 
@@ -17,23 +17,22 @@
 
 ## Two ways to use it
 
-### 🤖 The AI agent — `npx ruvnet/worldgraph`
+### 🤖 The AI agent — `npx worldgraphs`
 
 A focused coding harness (architect / implementer / reviewer / test-writer) that drops into your AI host and helps you design, build, review, and test digital-twin code.
 
 ```bash
-# run straight from this repo — no npm install needed:
-npx ruvnet/worldgraph init      # wire the agents into your AI host (Claude Code, Codex, Copilot, …)
-npx ruvnet/worldgraph doctor    # health check
+npx worldgraphs init       # wire the agents into your AI host (Claude Code, Codex, Copilot, …)
+npx worldgraphs doctor     # health check
 
-# or install the `worldgraph` command globally:
-npm i -g ruvnet/worldgraph
-worldgraph init
+# or install globally:
+npm i -g worldgraphs
+worldgraphs init
 ```
 
-> **Why `npx ruvnet/worldgraph` and not `npx worldgraph`?** npm reserves the bare name
-> `worldgraph` (it's too similar to the existing `world-graph` package), so the agent
-> runs from this GitHub repo instead — same name, no npm-registry collision.
+> **Why `worldgraphs` (plural)?** npm reserves the bare name `worldgraph` (too similar to
+> the existing `world-graph` package), so the npm package is published as `worldgraphs`.
+> You can also run it straight from this repo: `npx ruvnet/worldgraph`.
 
 Then ask your host to design or implement a change — the four agents run an opinionated pipeline so you get a plan, clean code, a bug-hunting review, and the missing tests. Ships adapters for **9 hosts**: Claude Code, Codex, Copilot, OpenCode, GitHub Actions, pi-dev, Hermes, OpenClaw, RVM.
 

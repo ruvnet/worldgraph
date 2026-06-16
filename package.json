@@ -1,10 +1,10 @@
 {
-  "name": "worldgraph",
-  "version": "0.1.1",
+  "name": "worldgraphs",
+  "version": "0.1.2",
   "description": "AI coding agent for building digital twins with worldgraph — architect, implement, review, and test the Rust spatial/sensor-graph crates",
   "type": "module",
   "bin": {
-    "worldgraph": "bin/cli.js"
+    "worldgraphs": "bin/cli.js"
   },
   "files": [
     "bin/**",
@@ -73,5 +73,8 @@
     "wifi-sensing",
     "occupancy",
     "provenance"
-  ]
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
 }
