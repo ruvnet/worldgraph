@@ -2,7 +2,7 @@
 name = "wifi-densepose-worldgraph"
 description = "ADR-139 — WorldGraph environmental digital twin (typed petgraph) for RuView"
 readme = "README.md"
-version = "0.3.1"
+version = "0.3.2"
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
