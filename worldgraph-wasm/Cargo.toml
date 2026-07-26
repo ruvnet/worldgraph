@@ -1,0 +1,32 @@
+[package]
+name = "worldgraph-wasm"
+description = "ADR-200 — WebAssembly bridge exposing the WorldGraph digital twin to the SuperSplat (PlayCanvas/WebGPU) browser visualizer"
+version = "0.3.1"
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+# `cdylib` produces the .wasm module (wasm-pack); `rlib` keeps the core logic
+# importable by native `cargo test` so the wire contract is provable off-target.
+name = "worldgraph_wasm"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+wifi-densepose-worldgraph = { version = "0.3.1", path = "../wifi-densepose-worldgraph" }
+wifi-densepose-geo = { version = "0.1.0", path = "../wifi-densepose-geo" }
+
+# wasm-only glue. Target-gated so a native `cargo build`/`cargo test` never
+# pulls the browser runtime and the pure-Rust core stays testable on the host.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = "0.2"
+serde-wasm-bindgen = "0.6"
+js-sys = "0.3"
+console_error_panic_hook = "0.1"
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"

@@ -4,6 +4,7 @@ members = [
     "wifi-densepose-geo",
     "wifi-densepose-worldgraph",
     "wifi-densepose-worldmodel",
+    "worldgraph-wasm",
 ]
 
 # Shared package metadata inherited by each member via `<field>.workspace = true`.

@@ -1,0 +1,38 @@
+{
+  "name": "@worldgraph/supersplat-bridge",
+  "version": "0.3.1",
+  "description": "TypeScript / PlayCanvas integration layer that renders the WorldGraph digital twin over a SuperSplat Gaussian splat via WASM (ADR-200/201/202)",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "files": [
+    "dist/**",
+    "src/**",
+    "README.md"
+  ],
+  "keywords": [
+    "worldgraph",
+    "supersplat",
+    "playcanvas",
+    "gaussian-splat",
+    "digital-twin",
+    "wasm",
+    "privacy"
+  ],
+  "license": "MIT OR Apache-2.0",
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "vitest": "^2.1.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
