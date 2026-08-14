@@ -59,6 +59,11 @@ priors back.
 - 🔁 **Backend-swappable** — the request/response contract (`OccupancyWorldModelRequest` → response with `confidence` + `trajectory_priors`) is model-agnostic (OccWorld today, RoboOccWorld / others later).
 - 🔒 **Privacy-gated by design** — meant to be called only when the WorldGraph's privacy mode permits it (ADR-141); reasons over occupancy, never pixels.
 - 🚫 **`#![forbid(unsafe_code)]`**, `missing_docs = warn`.
+- 🎬 **Stateful simulation contract (ADR-204)** — Rust-owned session epochs,
+  action sequences, privacy decisions, licensing gates, and media provenance.
+- 🧪 **Runnable deterministic provider** — exercises the complete lifecycle
+  and emits changing simulated-frame envelopes without credentials, weights,
+  network access, or GPU hardware.
 
 ## Install
 
@@ -102,6 +107,47 @@ for prior in &response.trajectory_priors {
 # Ok(())
 # }
 ```
+
+## Deterministic generative-provider demo
+
+Run the provider-neutral ADR-204 lifecycle locally:
+
+```bash
+cargo run -p wifi-densepose-worldmodel --example deterministic_provider -- 4
+```
+
+The command prints four newline-delimited `SimulatedFrameEnvelope` JSON
+objects. Their epoch, sequence, locator, action provenance, and content hash
+change deterministically. The example calls `initialize`, ordered `step`s,
+`reset`, and `finish`; `mock://` frame descriptors are fixtures, not generated
+photorealistic pixels and not sensed evidence.
+
+Generated-media envelopes intentionally do not enter `TwinEnvelope` graph
+replication. A stream service may carry them on a distinct media channel, but
+must not submit them to the authoritative graph producer endpoint.
+
+## External generative models
+
+Oasis 3, LingBot-World v2, and Wan2.2 are configuration seams for an
+independently installed sidecar. This crate does not bundle, download, or run
+their services, model code, checkpoints, or GPU kernels.
+
+| Provider | Required before configuration succeeds | Runtime status here |
+|---|---|---|
+| Oasis 3 | Accepted service terms, a non-empty credential environment variable, `hosted: true`, and per-request hosted-processing approval | External hosted sidecar only |
+| LingBot-World v2 | Accepted terms, an existing separately provisioned weights path, non-commercial research deployment, and explicit research-only opt-in | External local sidecar only; CC BY-NC-SA 4.0 artifacts are not production-enabled |
+| Wan2.2 | Accepted terms and an existing separately provisioned weights path | External local sidecar only |
+
+Construct an `ExternalModelConfig`, then call `build_sidecar(SidecarConfig)`.
+The sidecar socket must already be running. `SidecarConfig` explicitly sets the
+Unix socket path, operation deadline, deployment policy, cancellation token,
+and whether processing is hosted. No remote provider is selected implicitly.
+Oasis credentials remain in the named environment variable and are never
+serialized into Rust control messages.
+
+The sidecar control channel uses bounded, versioned newline-delimited JSON;
+frame bytes remain on the `shm`, WebRTC, HTTPS, or other media transport named
+by each bounded `FrameDescriptor`.
 
 ## Technical details
 

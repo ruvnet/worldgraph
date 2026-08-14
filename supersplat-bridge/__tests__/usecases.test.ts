@@ -5,6 +5,7 @@ import { Configurator } from '../src/usecases/configurator.js';
 import { TrajectoryOverlay, buildTrajectoryOverlay } from '../src/usecases/occworld.js';
 import { ProvenancePanel, worldIdFromKey, formatProvenanceCard, provenanceToMarkdown } from '../src/usecases/audit.js';
 import { makeFakeModule } from './fake-bridge.js';
+import { PresenceLayer } from '../src/usecases/presence.js';
 
 async function viz(seed = [] as Parameters<typeof makeFakeModule>[0]) {
   const v = new SemanticVisualizer();
@@ -48,6 +49,23 @@ describe('PersonTrackLayer — zero-video control room (ADR-202 §1)', () => {
     expect(removed).toEqual([2]);
     expect(layer.size).toBe(1);
     expect(v.nodeCount()).toBe(1);
+  });
+});
+
+describe('PresenceLayer — ephemeral operators', () => {
+  it('uses a distinct semantic kind and an existing sphere shape', () => {
+    const layer = new PresenceLayer();
+    const prims = layer.apply([{ viewer_id: 7, position: { east_m: 2, north_m: 3, up_m: 1 }, active: true }]);
+    expect(prims[0]).toMatchObject({ id: 7, kind: 'viewer_presence', shape: 'sphere', position: [2, 1, -3] });
+    expect(layer.retainOnly([])).toEqual([7]);
+  });
+
+  it('removes a viewer marker on an inactive departure update', () => {
+    const layer = new PresenceLayer();
+    const position = { east_m: 2, north_m: 3, up_m: 1 };
+    layer.apply([{ viewer_id: 7, position, active: true }]);
+    expect(layer.apply([{ viewer_id: 7, position, active: false }])).toEqual([]);
+    expect(layer.size).toBe(0);
   });
 });
 

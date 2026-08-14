@@ -25,6 +25,25 @@ impl WorldId {
     }
 }
 
+/// Stable identity for a relationship in the world graph.
+///
+/// Unlike petgraph's internal edge index this value survives removal,
+/// compaction, snapshots, and delta replay. `0` is reserved as an allocation
+/// sentinel and is never emitted by a graph.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct WorldEdgeId(pub u64);
+
+impl WorldEdgeId {
+    /// The "allocate a fresh id" sentinel.
+    pub const UNASSIGNED: Self = Self(0);
+
+    /// Whether this is the allocation sentinel.
+    #[must_use]
+    pub fn is_unassigned(self) -> bool {
+        self.0 == 0
+    }
+}
+
 /// Local ENU coordinate in metres relative to the installation origin (ADR-044).
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct EnuPoint {
@@ -129,6 +148,29 @@ pub enum AnchorKind {
     Furniture,
     /// A surveyed UWB beacon (ADR-144).
     UwbBeacon,
+}
+
+/// Runtime asset container format.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AssetFormat {
+    /// JSON glTF document.
+    Gltf,
+    /// Binary glTF container.
+    Glb,
+}
+
+/// HTTPS runtime asset metadata. Network allow-list and integrity enforcement
+/// belong to the consuming renderer.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AssetRef {
+    /// Asset URL.
+    pub url: String,
+    /// Container format.
+    pub format: AssetFormat,
+    /// Optional Subresource Integrity value.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub integrity: Option<String>,
 }
 
 /// Mandatory provenance for every [`WorldNode::SemanticState`] (house rule):
@@ -239,6 +281,9 @@ pub enum WorldNode {
         anchor_kind: AnchorKind,
         /// Confidence in [0, 1].
         confidence: f32,
+        /// Optional runtime-loadable visual asset. Absent in schema v1.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        asset: Option<AssetRef>,
     },
     /// A discrete detected event (fall, entry, gesture) at a point in time.
     Event {

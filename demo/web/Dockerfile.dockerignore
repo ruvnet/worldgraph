@@ -1,0 +1,9 @@
+.git
+.github
+target
+node_modules
+**/node_modules
+**/dist
+demo/web/public/wasm
+demo/web/test-results
+*.log

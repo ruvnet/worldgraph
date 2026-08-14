@@ -23,6 +23,7 @@ export interface WorldgraphBridgeApi {
   getEdges(): WorldEdgeTriple[];
   getRenderPrimitives(): RenderPrimitive[];
   getProvenance(id: number): ProvenanceCard | null;
+  applyMessageJson(json: string): void;
   trajectoryOverlay(
     trackId: number,
     fromE: number,
@@ -69,9 +70,10 @@ export type WasmLoader = () => Promise<WorldgraphWasmModule>;
  * module do not fail to type-check this package.
  */
 export const defaultWasmLoader: WasmLoader = async () => {
+  const modulePath: string = './worldgraph-wasm/worldgraph_wasm.js';
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mod = (await import(
-    /* @vite-ignore */ './worldgraph-wasm/worldgraph_wasm.js' as string
+    /* @vite-ignore */ modulePath
   )) as unknown as WorldgraphWasmModule;
   return mod;
 };
@@ -146,6 +148,11 @@ export class SemanticVisualizer {
   /** Click-to-audit provenance card for a node id (or `null`). */
   provenance(id: number): ProvenanceCard | null {
     return this.require().getProvenance(id);
+  }
+
+  /** Apply one validated stream message to the authoritative WASM graph. */
+  applyMessage(messageJson: string): void {
+    this.require().applyMessageJson(messageJson);
   }
 
   /** Build an OccWorld predictive-trajectory overlay. */

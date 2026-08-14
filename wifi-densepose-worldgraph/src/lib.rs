@@ -23,8 +23,8 @@ pub mod graph;
 pub mod model;
 
 pub use error::WorldGraphError;
-pub use graph::{PrivacyRollup, WorldGraph, WorldGraphSnapshot, SCHEMA_VERSION};
+pub use graph::{PrivacyRollup, WorldEdgeRecord, WorldGraph, WorldGraphSnapshot, SCHEMA_VERSION};
 pub use model::{
-    AnchorKind, EnuPoint, SemanticProvenance, SensorModality, WorldEdge, WorldId, WorldNode,
+    AnchorKind, AssetFormat, AssetRef, EnuPoint, SemanticProvenance, SensorModality, WorldEdge, WorldEdgeId, WorldId, WorldNode,
     ZoneBoundsEnu,
 };
