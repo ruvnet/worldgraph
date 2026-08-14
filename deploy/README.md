@@ -43,3 +43,25 @@ added at the edge later; clients negotiate down to this WebSocket endpoint.
 
 No external environment is changed by this repository configuration. Running
 the compose command deploys the artifact only to the selected Docker host.
+
+## Runnable local demo
+
+The demo overlay is deliberately separate from production configuration. It
+uses a checked-in, local-only signing key, enables `/demo/bootstrap`, seeds a
+room/sensor/person graph, and moves the person every 500 ms through the normal
+validated streaming path:
+
+```bash
+docker compose -f compose.yaml -f compose.demo.yaml up --build
+curl --fail http://127.0.0.1:8080/demo/bootstrap
+```
+
+Open <http://127.0.0.1:4173> for the compiled browser UI. The unprivileged
+web container serves the real WASM bundle and proxies bootstrap and WebSocket
+traffic to the Rust service on the private Compose network.
+
+The bootstrap response contains a two-minute viewer JWT and the relative
+`/v1/twin/ws` URL. The token has only `twin:read twin:sensitive`; it cannot use
+the producer endpoint. Stopping the demo overlay removes the token-minting
+endpoint—`/demo/bootstrap` returns 404 in the default production mode. Never
+reuse the demo overlay or its known secret on an exposed host.

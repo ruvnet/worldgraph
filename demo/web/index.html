@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Worldgraph Live Twin</title>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <p class="eyebrow">WORLDGRAPH / LIVE TWIN</p>
+          <h1>Spatial state, alive.</h1>
+          <p class="lede">A real Rust → WebSocket → WASM browser pipeline. No fake bridge, no prerecorded frames.</p>
+        </div>
+        <div id="connection-pill" class="pill pending">BOOTING</div>
+      </header>
+      <section class="workspace">
+        <div class="viewport-card">
+          <canvas id="world" aria-label="Live top-down worldgraph visualization"></canvas>
+          <div class="legend">
+            <span><i class="person"></i>Sensed person</span>
+            <span><i class="viewer"></i>Viewer presence</span>
+            <span><i class="sensor"></i>Sensor</span>
+          </div>
+        </div>
+        <aside>
+          <section class="panel metrics">
+            <h2>Stream telemetry</h2>
+            <dl>
+              <div><dt>Connection</dt><dd id="connection">booting</dd></div>
+              <div><dt>Transport</dt><dd id="transport">—</dd></div>
+              <div><dt>Epoch</dt><dd id="epoch">—</dd></div>
+              <div><dt>Sequence</dt><dd id="sequence">—</dd></div>
+              <div><dt>Graph nodes</dt><dd id="nodes">0</dd></div>
+              <div><dt>Presence</dt><dd id="presence">0</dd></div>
+              <div><dt>Backend</dt><dd id="backend">Canvas2D</dd></div>
+            </dl>
+          </section>
+          <section class="panel">
+            <h2>Live events</h2>
+            <ol id="events" aria-live="polite"></ol>
+          </section>
+          <section class="panel privacy">
+            <span>PRIVACY MODE</span>
+            <strong>Anonymous spatial tracks</strong>
+            <p>Viewer presence is ephemeral and never persisted into the sensed graph.</p>
+          </section>
+        </aside>
+      </section>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

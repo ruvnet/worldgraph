@@ -113,6 +113,18 @@ export WORLDGRAPH_TOKEN_SECRET="$(openssl rand -base64 48)"
 docker compose up --build --detach
 ```
 
+For the complete local browser → WebSocket → Rust/WASM demonstration:
+
+```bash
+docker compose -f compose.yaml -f compose.demo.yaml up --build
+```
+
+Then open <http://127.0.0.1:4173>. This explicit demo overlay uses a
+loopback-only development token issuer and moving synthetic track; it is not a
+production authentication configuration. See [`demo/web/README.md`](demo/web/README.md)
+for the browser test and [`deploy/README.md`](deploy/README.md) for deployment
+boundaries.
+
 ## License
 
 Dual-licensed **MIT OR Apache-2.0** — see [`LICENSE-MIT`](./LICENSE-MIT) and [`LICENSE-APACHE`](./LICENSE-APACHE).

@@ -1,0 +1,23 @@
+{
+  "name": "@worldgraph/live-demo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:wasm": "bash ../../worldgraph-wasm/build-wasm.sh \"$PWD/public/wasm\"",
+    "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build:web": "vite build",
+    "build": "npm run build:wasm && vite build",
+    "pretest:e2e": "npm run build:wasm",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.1",
+    "vitest": "^4.1.10"
+  },
+  "engines": { "node": ">=20.19.0" }
+}

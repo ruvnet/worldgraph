@@ -35,7 +35,7 @@ export class PresenceLayer {
       label: `viewer ${viewer.viewer_id}`,
       position: enuToPlayCanvas(viewer.position),
       scale: [0.25, 0.25, 0.25],
-      color: [0.2, 0.7, 1, 0.8],
+      color: [0.72, 0.35, 1, 0.9],
       transparent: true
     }));
   }

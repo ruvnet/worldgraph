@@ -1,0 +1,33 @@
+# Explicit local-only demo overlay. Never use this known signing key outside a
+# developer workstation.
+services:
+  worldgraph-stream:
+    environment:
+      WORLDGRAPH_DEMO_MODE: "1"
+      WORLDGRAPH_TOKEN_SECRET: local-demo-signing-secret-32-bytes-minimum
+      WORLDGRAPH_TOKEN_AUDIENCE: worldgraph-stream
+    ports: !override
+      - "127.0.0.1:${WORLDGRAPH_STREAM_DEMO_PORT:-8080}:8080"
+    restart: "no"
+
+  worldgraph-demo-web:
+    build:
+      context: .
+      dockerfile: demo/web/Dockerfile
+      target: runtime
+    image: worldgraph-demo-web:local
+    depends_on:
+      worldgraph-stream:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${WORLDGRAPH_DEMO_PORT:-4173}:8080"
+    restart: "no"
+    read_only: true
+    tmpfs:
+      - /tmp:size=8m,mode=1777
+      - /var/cache/nginx:size=8m,mode=0770,uid=101,gid=101
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64

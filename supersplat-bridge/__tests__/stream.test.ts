@@ -49,6 +49,17 @@ describe('TwinStreamClient', () => {
     expect(JSON.parse(ws.sent[0]!)).toMatchObject({ type: 'client_hello', access_token: 'secret' });
   });
 
+  it('permits insecure WebSocket only for a loopback demo', async () => {
+    const { viz } = await setup();
+    const local = new MockTransport('websocket');
+    const client = new TwinStreamClient(viz, { webSocket: () => local });
+    await expect(client.connect({ webSocket: 'ws://127.0.0.1:8080/v1/twin/ws', token: 'demo' }))
+      .resolves.toMatchObject({ transport: 'websocket' });
+    const remote = new TwinStreamClient(viz, { webSocket: () => new MockTransport('websocket') });
+    await expect(remote.connect({ webSocket: 'ws://stream.example/v1/twin/ws', token: 'bad' }))
+      .rejects.toThrow(/loopback/);
+  });
+
   it('falls back when WebTransport connects but never negotiates', async () => {
     const { viz } = await setup();
     const wt = new MockTransport('webtransport', false, false);

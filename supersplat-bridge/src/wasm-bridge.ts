@@ -70,9 +70,10 @@ export type WasmLoader = () => Promise<WorldgraphWasmModule>;
  * module do not fail to type-check this package.
  */
 export const defaultWasmLoader: WasmLoader = async () => {
+  const modulePath: string = './worldgraph-wasm/worldgraph_wasm.js';
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mod = (await import(
-    /* @vite-ignore */ './worldgraph-wasm/worldgraph_wasm.js' as string
+    /* @vite-ignore */ modulePath
   )) as unknown as WorldgraphWasmModule;
   return mod;
 };

@@ -20,7 +20,7 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use jsonwebtoken::{Algorithm, DecodingKey, Validation};
+use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use tokio::{
     sync::{broadcast, Mutex, RwLock},
@@ -169,10 +169,48 @@ impl StreamHub {
 struct AppState {
     hub: StreamHub,
     validator: Arc<dyn TokenValidator>,
+    demo: Option<DemoBootstrap>,
+}
+
+/// Explicit development-only token issuer configuration. Production routers
+/// omit this value and therefore do not expose a bootstrap endpoint.
+#[derive(Clone)]
+pub struct DemoBootstrap {
+    key: EncodingKey,
+    audience: String,
+    ttl_seconds: u64,
+}
+
+impl DemoBootstrap {
+    /// Create a demo issuer using the same signing material as the validator.
+    /// TTL is capped at the production validator maximum.
+    pub fn new(
+        secret: &[u8],
+        audience: impl Into<String>,
+        ttl_seconds: u64,
+    ) -> Result<Self, AuthError> {
+        if secret.len() < 32 || ttl_seconds == 0 || ttl_seconds > MAX_TOKEN_TTL_SECONDS {
+            return Err(AuthError::Invalid);
+        }
+        Ok(Self {
+            key: EncodingKey::from_secret(secret),
+            audience: audience.into(),
+            ttl_seconds,
+        })
+    }
 }
 
 /// Build `/healthz`, `/v1/twin/ws`, and producer `/v1/twin/envelopes`.
 pub fn router(hub: StreamHub, validator: Arc<dyn TokenValidator>) -> Router {
+    router_with_demo(hub, validator, None)
+}
+
+/// Build the router with an explicit development bootstrap token issuer.
+pub fn router_with_demo(
+    hub: StreamHub,
+    validator: Arc<dyn TokenValidator>,
+    demo: Option<DemoBootstrap>,
+) -> Router {
     Router::new()
         .route(
             "/healthz",
@@ -180,8 +218,53 @@ pub fn router(hub: StreamHub, validator: Arc<dyn TokenValidator>) -> Router {
         )
         .route("/v1/twin/ws", get(websocket))
         .route("/v1/twin/envelopes", post(publish))
+        .route("/demo/bootstrap", get(demo_bootstrap))
         .layer(DefaultBodyLimit::max(MAX_MESSAGE_BYTES))
-        .with_state(AppState { hub, validator })
+        .with_state(AppState {
+            hub,
+            validator,
+            demo,
+        })
+}
+
+#[derive(Serialize)]
+struct DemoTokenClaims<'a> {
+    sub: &'a str,
+    exp: u64,
+    aud: &'a str,
+    scope: &'a str,
+}
+
+#[derive(Serialize)]
+struct DemoBootstrapResponse {
+    token: String,
+    expires_at: u64,
+    websocket_url: &'static str,
+    protocol_version: u16,
+    graph_schema_version: u16,
+}
+
+async fn demo_bootstrap(
+    State(state): State<AppState>,
+) -> Result<Json<DemoBootstrapResponse>, StatusCode> {
+    let demo = state.demo.as_ref().ok_or(StatusCode::NOT_FOUND)?;
+    let issued = now();
+    let expires_at = issued.saturating_add(demo.ttl_seconds);
+    let claims = DemoTokenClaims {
+        sub: "local-demo-viewer",
+        exp: expires_at,
+        aud: &demo.audience,
+        scope: "twin:read twin:sensitive",
+    };
+    let token = jsonwebtoken::encode(&Header::new(Algorithm::HS256), &claims, &demo.key)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    Ok(Json(DemoBootstrapResponse {
+        token,
+        expires_at,
+        websocket_url: "/v1/twin/ws",
+        protocol_version: PROTOCOL_VERSION,
+        graph_schema_version: SCHEMA_VERSION,
+    }))
 }
 
 fn bearer(headers: &HeaderMap) -> Option<&str> {
@@ -404,13 +487,24 @@ pub async fn serve(
     axum::serve(listener, router(hub, validator)).await
 }
 
+/// Serve with the explicitly enabled development bootstrap endpoint.
+pub async fn serve_with_demo(
+    addr: SocketAddr,
+    hub: StreamHub,
+    validator: Arc<dyn TokenValidator>,
+    demo: DemoBootstrap,
+) -> std::io::Result<()> {
+    let listener = tokio::net::TcpListener::bind(addr).await?;
+    axum::serve(listener, router_with_demo(hub, validator, Some(demo))).await
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use axum::http::HeaderValue;
     use futures_util::{SinkExt, StreamExt};
     use wifi_densepose_geo::GeoRegistration;
-    use wifi_densepose_worldgraph::{WorldGraph, WorldId};
+    use wifi_densepose_worldgraph::{WorldGraph, WorldId, WorldNode};
 
     #[derive(Serialize)]
     struct SignedClaims<'a> {
@@ -443,6 +537,7 @@ mod tests {
         let state = AppState {
             hub: hub.clone(),
             validator: Arc::new(FakeValidator),
+            demo: None,
         };
         let envelope = TwinEnvelope::new("e", 1, TwinMessage::RemoveNode { id: WorldId(99) });
         let mut headers = HeaderMap::new();
@@ -480,6 +575,7 @@ mod tests {
         let state = AppState {
             hub,
             validator: Arc::new(FakeValidator),
+            demo: None,
         };
         assert_eq!(
             publish(State(state), headers, Json(injected)).await,
@@ -601,6 +697,119 @@ mod tests {
             response,
             Ok(Some(Ok(tokio_tungstenite::tungstenite::Message::Text(_))))
         ));
+        task.abort();
+    }
+
+    #[tokio::test]
+    async fn demo_bootstrap_token_connects_and_receives_changing_state() {
+        let secret = b"01234567890123456789012345678901";
+        let audience = "worldgraph-stream";
+        let mut graph = WorldGraph::new(GeoRegistration::default());
+        graph.upsert_node(WorldNode::Room {
+            id: WorldId(1),
+            area_id: None,
+            name: "Demo".into(),
+            bounds_enu: wifi_densepose_worldgraph::ZoneBoundsEnu::Rectangle {
+                min_e: 0.0,
+                min_n: 0.0,
+                max_e: 4.0,
+                max_n: 4.0,
+            },
+            floor: 0,
+        });
+        let hub = StreamHub::new("demo-e2e", graph.snapshot());
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let app = router_with_demo(
+            hub.clone(),
+            Arc::new(JwtTokenValidator::new(secret, audience).unwrap()),
+            Some(DemoBootstrap::new(secret, audience, 60).unwrap()),
+        );
+        let task = tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+
+        let bootstrap: serde_json::Value = reqwest::get(format!("http://{addr}/demo/bootstrap"))
+            .await
+            .unwrap()
+            .error_for_status()
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
+        assert_eq!(bootstrap["websocket_url"], "/v1/twin/ws");
+        let token = bootstrap["token"].as_str().unwrap();
+        let (mut ws, _) = tokio_tungstenite::connect_async(format!("ws://{addr}/v1/twin/ws"))
+            .await
+            .unwrap();
+        ws.send(tokio_tungstenite::tungstenite::Message::Text(
+            serde_json::json!({
+                "type":"client_hello", "supported_protocol_versions":[1],
+                "capabilities":["snapshot","delta"], "access_token":token
+            })
+            .to_string()
+            .into(),
+        ))
+        .await
+        .unwrap();
+        let _hello = ws.next().await.unwrap().unwrap();
+        let snapshot = ws.next().await.unwrap().unwrap().into_text().unwrap();
+        assert_eq!(
+            serde_json::from_str::<serde_json::Value>(&snapshot).unwrap()["message"]["op"],
+            "snapshot"
+        );
+
+        hub.publish(TwinEnvelope::new(
+            "demo-e2e",
+            1,
+            TwinMessage::UpsertNode {
+                node: WorldNode::Room {
+                    id: WorldId(1),
+                    area_id: None,
+                    name: "Demo changed".into(),
+                    bounds_enu: wifi_densepose_worldgraph::ZoneBoundsEnu::Rectangle {
+                        min_e: 0.0,
+                        min_n: 0.0,
+                        max_e: 4.0,
+                        max_n: 4.0,
+                    },
+                    floor: 0,
+                },
+            },
+        ))
+        .await
+        .unwrap();
+        let delta = timeout(Duration::from_secs(1), ws.next())
+            .await
+            .unwrap()
+            .unwrap()
+            .unwrap()
+            .into_text()
+            .unwrap();
+        let delta: serde_json::Value = serde_json::from_str(&delta).unwrap();
+        assert_eq!(delta["message"]["op"], "upsert_node");
+        assert_eq!(delta["message"]["node"]["name"], "Demo changed");
+        task.abort();
+    }
+
+    #[tokio::test]
+    async fn production_router_does_not_expose_demo_token_minting() {
+        let hub = StreamHub::new(
+            "prod",
+            WorldGraph::new(GeoRegistration::default()).snapshot(),
+        );
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let task = tokio::spawn(async move {
+            axum::serve(listener, router(hub, Arc::new(FakeValidator)))
+                .await
+                .unwrap()
+        });
+        assert_eq!(
+            reqwest::get(format!("http://{addr}/demo/bootstrap"))
+                .await
+                .unwrap()
+                .status(),
+            StatusCode::NOT_FOUND
+        );
         task.abort();
     }
 }

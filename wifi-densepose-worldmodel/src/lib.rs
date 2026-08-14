@@ -51,10 +51,11 @@ pub use error::WorldModelError;
 pub use occupancy::worldgraph_to_occupancy;
 pub use runtime::{
     ActionChunk, ActionSample, CancellationToken, DeploymentEnvironment, DeploymentPolicy,
-    ExternalSidecarProvider, FrameDescriptor, GenerativeWorldModel, LicensePolicy, LicenseUsage,
-    MockWorldModel, ModelFuture, ModelProvenance, ModelSession, PrivacyDecision, RetentionPolicy,
-    ScenePrimitive, SceneSeed, SidecarConfig, SidecarControlRequest, SidecarControlResponse,
-    SidecarRequest, SidecarResponse, SimulatedFrameChunk, SimulatedFrameEnvelope,
+    ExternalModelConfig, ExternalModelKind, ExternalSidecarProvider, FrameDescriptor,
+    GenerativeWorldModel, LicensePolicy, LicenseUsage, MockWorldModel, ModelFuture,
+    ModelProvenance, ModelSession, PrivacyDecision, RetentionPolicy, ScenePrimitive, SceneSeed,
+    SidecarConfig, SidecarControlRequest, SidecarControlResponse, SidecarRequest, SidecarResponse,
+    SimulatedFrameChunk, SimulatedFrameEnvelope,
 };
 
 use serde::{Deserialize, Serialize};

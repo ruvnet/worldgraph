@@ -17,7 +17,7 @@ crate-type = ["cdylib", "rlib"]
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 wifi-densepose-worldgraph = { version = "0.3.1", path = "../wifi-densepose-worldgraph" }
-wifi-densepose-geo = { version = "0.1.0", path = "../wifi-densepose-geo" }
+wifi-densepose-geo = { version = "0.1.0", path = "../wifi-densepose-geo", default-features = false }
 worldgraph-stream = { path = "../worldgraph-stream" }
 
 # wasm-only glue. Target-gated so a native `cargo build`/`cargo test` never

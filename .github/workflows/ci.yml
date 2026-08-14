@@ -32,6 +32,41 @@ jobs:
       - run: npm run build
       - run: npm audit --audit-level=high
 
+  live-demo-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: demo/web/package-lock.json
+      - name: Install wasm-pack
+        run: cargo install wasm-pack --version 0.14.0 --locked
+      - name: Install browser demo dependencies
+        working-directory: demo/web
+        run: npm ci
+      - name: Install Chromium
+        working-directory: demo/web
+        run: npx playwright install --with-deps chromium
+      - name: Build real Rust/WASM browser bundle
+        working-directory: demo/web
+        run: npm run build
+      - name: Test browser-to-stream-to-WASM path
+        working-directory: demo/web
+        run: npm run test:e2e
+      - name: Upload live-system proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: worldgraph-live-demo-proof
+          path: demo/web/test-results/
+          if-no-files-found: error
+
   agent-harness:
     runs-on: ubuntu-latest
     steps:
@@ -55,3 +90,9 @@ jobs:
           context: .
           push: false
           tags: worldgraph-stream:ci
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: demo/web/Dockerfile
+          push: false
+          tags: worldgraph-demo-web:ci

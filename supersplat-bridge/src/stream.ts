@@ -262,7 +262,11 @@ export class TwinStreamClient {
 function assertEndpoint(url: string, kind: StreamTransport['kind']): void {
   const parsed = new URL(url);
   const expected = kind === 'webtransport' ? 'https:' : 'wss:';
-  if (parsed.protocol !== expected) throw new Error(`${kind} endpoint must use ${expected}`);
+  const localWebSocket = kind === 'websocket' && parsed.protocol === 'ws:' &&
+    (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1' || parsed.hostname === '[::1]');
+  if (parsed.protocol !== expected && !localWebSocket) {
+    throw new Error(`${kind} endpoint must use ${expected} (ws: is allowed only on loopback)`);
+  }
 }
 
 function isServerHello(value: unknown): value is ServerHello {

@@ -55,6 +55,140 @@ pub enum LicenseUsage {
     ResearchOnly,
 }
 
+/// External model family behind a separately deployed sidecar.
+///
+/// Selecting a variant does not download, bundle, or start the named model.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ExternalModelKind {
+    /// Decart's hosted Oasis 3 service. Requires a credential and hosted-data approval.
+    Oasis3,
+    /// LingBot-World v2 external worker. Released artifacts are research-only.
+    LingBotWorldV2,
+    /// Wan2.2 external worker using separately provisioned weights.
+    Wan22,
+}
+
+impl ExternalModelKind {
+    /// License policy enforced for the selected external provider.
+    pub fn license_policy(self) -> LicensePolicy {
+        match self {
+            Self::Oasis3 => LicensePolicy {
+                license_id: "LicenseRef-Decart-Oasis-3-Service".into(),
+                usage: LicenseUsage::Production,
+                redistribution_allowed: false,
+                attribution_required: false,
+                notice: Some("Hosted service terms and data-processing approval apply".into()),
+            },
+            Self::LingBotWorldV2 => LicensePolicy {
+                license_id: "CC-BY-NC-SA-4.0".into(),
+                usage: LicenseUsage::ResearchOnly,
+                redistribution_allowed: false,
+                attribution_required: true,
+                notice: Some(
+                    "Released LingBot-World v2 code and weights are non-commercial".into(),
+                ),
+            },
+            Self::Wan22 => LicensePolicy::apache_2_0(),
+        }
+    }
+}
+
+/// Fail-closed configuration for a separately installed external model.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ExternalModelConfig {
+    /// External model family expected behind the sidecar.
+    pub kind: ExternalModelKind,
+    /// Explicit acknowledgement that the operator accepted applicable terms.
+    pub terms_accepted: bool,
+    /// Environment variable containing the Oasis credential. The credential
+    /// value is never serialized into this configuration or sidecar request.
+    pub credential_env: Option<String>,
+    /// Separately provisioned local checkpoint/weights path for LingBot or Wan.
+    pub weights_path: Option<PathBuf>,
+}
+
+impl ExternalModelConfig {
+    /// Validates credentials, artifacts, deployment classification, and
+    /// licensing, then constructs the generic sidecar client.
+    ///
+    /// This does not start or download a model. The configured Unix sidecar
+    /// must already be running and must independently validate its checkpoint.
+    pub fn build_sidecar(
+        &self,
+        sidecar: SidecarConfig,
+    ) -> Result<ExternalSidecarProvider, WorldModelError> {
+        if !self.terms_accepted {
+            return Err(WorldModelError::LicenseDenied {
+                license: self.kind.license_policy().license_id,
+                reason: "external provider terms were not explicitly accepted".into(),
+            });
+        }
+        let policy = self.kind.license_policy();
+        policy.enforce(&sidecar.deployment)?;
+        match self.kind {
+            ExternalModelKind::Oasis3 => {
+                if !sidecar.hosted {
+                    return Err(WorldModelError::InvalidInput(
+                        "Oasis 3 must be configured as a hosted provider".into(),
+                    ));
+                }
+                let variable = self.credential_env.as_deref().ok_or_else(|| {
+                    WorldModelError::InvalidInput(
+                        "Oasis 3 requires a credential environment-variable name".into(),
+                    )
+                })?;
+                if variable.is_empty()
+                    || variable.len() > 128
+                    || !variable
+                        .bytes()
+                        .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')
+                {
+                    return Err(WorldModelError::InvalidInput(
+                        "credential environment-variable name must contain 1..=128 ASCII letters, digits, or underscores".into(),
+                    ));
+                }
+                let credential_available =
+                    matches!(std::env::var_os(variable), Some(value) if !value.is_empty());
+                if !credential_available {
+                    return Err(WorldModelError::InvalidInput(format!(
+                        "Oasis 3 credential environment variable `{variable}` is unset or empty"
+                    )));
+                }
+                if self.weights_path.is_some() {
+                    return Err(WorldModelError::InvalidInput(
+                        "Oasis 3 is hosted and does not accept a local weights path".into(),
+                    ));
+                }
+            }
+            ExternalModelKind::LingBotWorldV2 | ExternalModelKind::Wan22 => {
+                if sidecar.hosted {
+                    return Err(WorldModelError::InvalidInput(
+                        "local weight providers must not be marked hosted".into(),
+                    ));
+                }
+                let path = self.weights_path.as_ref().ok_or_else(|| {
+                    WorldModelError::InvalidInput(
+                        "external local provider requires an explicit weights path".into(),
+                    )
+                })?;
+                if !path.exists() {
+                    return Err(WorldModelError::InvalidInput(format!(
+                        "configured weights path `{}` does not exist",
+                        path.display()
+                    )));
+                }
+                if self.credential_env.is_some() {
+                    return Err(WorldModelError::InvalidInput(
+                        "local weight providers do not accept a hosted credential setting".into(),
+                    ));
+                }
+            }
+        }
+        Ok(ExternalSidecarProvider::new(sidecar, policy))
+    }
+}
+
 /// Machine-readable provider licensing policy.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LicensePolicy {
@@ -1151,7 +1285,9 @@ mod tests {
         assert_eq!(first.next_sequence, 1);
         model.reset(&mut first, seed()).await.unwrap();
         assert_eq!((first.epoch, first.next_sequence), (1, 0));
-        model.step(&mut first, action(1, 0)).await.unwrap();
+        let after_reset = model.step(&mut first, action(1, 0)).await.unwrap();
+        assert_ne!(a.frames[0].content_hash, after_reset.frames[0].content_hash);
+        assert_eq!(after_reset.provenance.generation_sequence, 0);
         model.finish(first).await.unwrap();
     }
 
@@ -1219,6 +1355,50 @@ mod tests {
             },
         );
         allowed.initialize(seed()).await.unwrap();
+    }
+
+    #[test]
+    fn external_model_configs_are_fail_closed() {
+        let sidecar = |hosted, deployment| SidecarConfig {
+            socket_path: PathBuf::from("/tmp/not-connected.sock"),
+            timeout: Duration::from_secs(1),
+            deployment,
+            cancellation: CancellationToken::default(),
+            hosted,
+        };
+
+        let oasis = ExternalModelConfig {
+            kind: ExternalModelKind::Oasis3,
+            terms_accepted: true,
+            credential_env: Some("WORLDGRAPH_TEST_OASIS_CREDENTIAL_MUST_BE_UNSET".into()),
+            weights_path: None,
+        };
+        assert!(matches!(
+            oasis.build_sidecar(sidecar(true, DeploymentPolicy::production())),
+            Err(WorldModelError::InvalidInput(_))
+        ));
+
+        let lingbot = ExternalModelConfig {
+            kind: ExternalModelKind::LingBotWorldV2,
+            terms_accepted: true,
+            credential_env: None,
+            weights_path: Some(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml")),
+        };
+        assert!(matches!(
+            lingbot.build_sidecar(sidecar(false, DeploymentPolicy::production())),
+            Err(WorldModelError::LicenseDenied { .. })
+        ));
+
+        let wan = ExternalModelConfig {
+            kind: ExternalModelKind::Wan22,
+            terms_accepted: false,
+            credential_env: None,
+            weights_path: None,
+        };
+        assert!(matches!(
+            wan.build_sidecar(sidecar(false, DeploymentPolicy::production())),
+            Err(WorldModelError::LicenseDenied { .. })
+        ));
     }
 
     #[tokio::test]
