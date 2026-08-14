@@ -8,9 +8,11 @@ export * from './enu.js';
 export * from './wasm-bridge.js';
 export * from './renderer.js';
 export * from './playcanvas-adapter.js';
+export * from './stream.js';
 
 // The four spatial applications.
 export * from './usecases/avatars.js';
 export * from './usecases/configurator.js';
 export * from './usecases/occworld.js';
 export * from './usecases/audit.js';
+export * from './usecases/presence.js';

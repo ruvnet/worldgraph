@@ -20,6 +20,7 @@ import { buildTrajectoryOverlay } from '../src/usecases/occworld.js';
 export class FakeBridge implements WorldgraphBridgeApi {
   private nodes = new Map<number, WorldNode>();
   private nextId = 1;
+  readonly appliedMessages: unknown[] = [];
 
   constructor(seed: WorldNode[] = []) {
     for (const n of seed) {
@@ -70,6 +71,19 @@ export class FakeBridge implements WorldgraphBridgeApi {
       fields: [{ key: 'kind', value: n.kind }],
       evidence: []
     };
+  }
+
+  applyMessageJson(json: string): void {
+    const message = JSON.parse(json) as { op: string; node?: WorldNode; id?: number; rvf_json?: string };
+    this.appliedMessages.push(message);
+    if (message.op === 'snapshot' && message.rvf_json) {
+      const snapshot = JSON.parse(message.rvf_json) as { nodes: WorldNode[] };
+      this.nodes = new Map(snapshot.nodes.map((node) => [node.id, node]));
+    } else if (message.op === 'upsert_node' && message.node) {
+      this.nodes.set(message.node.id, message.node);
+    } else if (message.op === 'remove_node' && message.id !== undefined) {
+      this.nodes.delete(message.id);
+    }
   }
 
   trajectoryOverlay(trackId: number, fromE: number, fromN: number, fromU: number, steps: TrajectoryStep[]): RenderPrimitive[] {

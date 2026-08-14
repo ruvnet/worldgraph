@@ -23,6 +23,7 @@ export interface WorldgraphBridgeApi {
   getEdges(): WorldEdgeTriple[];
   getRenderPrimitives(): RenderPrimitive[];
   getProvenance(id: number): ProvenanceCard | null;
+  applyMessageJson(json: string): void;
   trajectoryOverlay(
     trackId: number,
     fromE: number,
@@ -146,6 +147,11 @@ export class SemanticVisualizer {
   /** Click-to-audit provenance card for a node id (or `null`). */
   provenance(id: number): ProvenanceCard | null {
     return this.require().getProvenance(id);
+  }
+
+  /** Apply one validated stream message to the authoritative WASM graph. */
+  applyMessage(messageJson: string): void {
+    this.require().applyMessageJson(messageJson);
   }
 
   /** Build an OccWorld predictive-trajectory overlay. */

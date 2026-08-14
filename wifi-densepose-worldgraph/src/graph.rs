@@ -1,18 +1,18 @@
 //! ADR-139 §2.2–2.5 — graph container, provenance, privacy rollup, queries.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
-use petgraph::stable_graph::{NodeIndex, StableDiGraph};
+use petgraph::stable_graph::{EdgeIndex, NodeIndex, StableDiGraph};
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
 use petgraph::Direction;
 use serde::{Deserialize, Serialize};
 use wifi_densepose_geo::types::GeoRegistration;
 
 use crate::error::WorldGraphError;
-use crate::model::{SemanticProvenance, WorldEdge, WorldId, WorldNode};
+use crate::model::{SemanticProvenance, WorldEdge, WorldEdgeId, WorldId, WorldNode};
 
 /// Current persisted schema version (ADR-136 §2.1 reserved-flag pattern).
-pub const SCHEMA_VERSION: u16 = 1;
+pub const SCHEMA_VERSION: u16 = 2;
 
 /// The typed environmental digital twin (ADR-139). Wraps a petgraph
 /// `StableDiGraph` and exposes a domain API; stable `WorldId → NodeIndex`
@@ -21,19 +21,49 @@ pub const SCHEMA_VERSION: u16 = 1;
 pub struct WorldGraph {
     inner: StableDiGraph<WorldNode, WorldEdge>,
     index: HashMap<WorldId, NodeIndex>,
+    edge_index: HashMap<WorldEdgeId, EdgeIndex>,
     registration: GeoRegistration,
     next_id: u64,
+    next_edge_id: u64,
     schema_version: u16,
 }
 
 /// Serializable snapshot of a [`WorldGraph`] for RVF/JSON persistence.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct WorldGraphSnapshot {
+    /// Snapshot schema version.
+    pub schema_version: u16,
+    /// Installation registration.
+    pub registration: GeoRegistration,
+    /// Next node id allocator value.
+    pub next_id: u64,
+    /// Next edge id allocator value.
+    pub next_edge_id: u64,
+    /// Live nodes.
+    pub nodes: Vec<WorldNode>,
+    /// Live edges.
+    pub edges: Vec<WorldEdgeRecord>,
+}
+
+/// A stable, serializable edge and its endpoints.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct WorldEdgeRecord {
+    /// Stable edge identity.
+    pub id: WorldEdgeId,
+    /// Source node.
+    pub from: WorldId,
+    /// Target node.
+    pub to: WorldId,
+    /// Typed relationship payload.
+    pub edge: WorldEdge,
+}
+
+#[derive(Deserialize)]
+struct LegacyWorldGraphSnapshot {
     schema_version: u16,
     registration: GeoRegistration,
     next_id: u64,
     nodes: Vec<WorldNode>,
-    /// Edges as (from_id, to_id, edge).
     edges: Vec<(WorldId, WorldId, WorldEdge)>,
 }
 
@@ -57,8 +87,10 @@ impl WorldGraph {
         Self {
             inner: StableDiGraph::new(),
             index: HashMap::new(),
+            edge_index: HashMap::new(),
             registration,
             next_id: 1,
+            next_edge_id: 1,
             schema_version: SCHEMA_VERSION,
         }
     }
@@ -73,6 +105,12 @@ impl WorldGraph {
     #[must_use]
     pub fn node_count(&self) -> usize {
         self.inner.node_count()
+    }
+
+    /// Number of live edges.
+    #[must_use]
+    pub fn edge_count(&self) -> usize {
+        self.inner.edge_count()
     }
 
     /// Insert or replace a node, returning its stable `WorldId`. If the node's
@@ -108,10 +146,54 @@ impl WorldGraph {
         to: WorldId,
         edge: WorldEdge,
     ) -> Result<(), WorldGraphError> {
+        self.upsert_edge(WorldEdgeId::UNASSIGNED, from, to, edge)?;
+        Ok(())
+    }
+
+    /// Insert or replace an edge by stable identity.
+    ///
+    /// Reapplying an upsert with the same id is idempotent, including when its
+    /// endpoints change. Passing [`WorldEdgeId::UNASSIGNED`] allocates an id.
+    pub fn upsert_edge(
+        &mut self,
+        mut id: WorldEdgeId,
+        from: WorldId,
+        to: WorldId,
+        edge: WorldEdge,
+    ) -> Result<WorldEdgeId, WorldGraphError> {
         let f = *self.index.get(&from).ok_or(WorldGraphError::UnknownNode(from))?;
         let t = *self.index.get(&to).ok_or(WorldGraphError::UnknownNode(to))?;
-        self.inner.add_edge(f, t, edge);
-        Ok(())
+        if id.is_unassigned() {
+            id = WorldEdgeId(self.next_edge_id);
+            self.next_edge_id += 1;
+        } else {
+            self.next_edge_id = self.next_edge_id.max(id.0.saturating_add(1));
+        }
+        if let Some(old) = self.edge_index.remove(&id) {
+            self.inner.remove_edge(old);
+        }
+        let idx = self.inner.add_edge(f, t, edge);
+        self.edge_index.insert(id, idx);
+        Ok(id)
+    }
+
+    /// Remove an edge by stable identity.
+    pub fn remove_edge(&mut self, id: WorldEdgeId) -> Option<WorldEdge> {
+        let idx = self.edge_index.remove(&id)?;
+        self.inner.remove_edge(idx)
+    }
+
+    /// Borrow an edge record by stable identity.
+    #[must_use]
+    pub fn edge(&self, id: WorldEdgeId) -> Option<WorldEdgeRecord> {
+        let idx = *self.edge_index.get(&id)?;
+        let (from, to) = self.inner.edge_endpoints(idx)?;
+        Some(WorldEdgeRecord {
+            id,
+            from: self.inner[from].id(),
+            to: self.inner[to].id(),
+            edge: self.inner.edge_weight(idx)?.clone(),
+        })
     }
 
     /// Borrow a node by id.
@@ -123,6 +205,10 @@ impl WorldGraph {
     /// Remove a node and its incident edges (e.g. a person leaves).
     pub fn remove_node(&mut self, id: WorldId) -> Option<WorldNode> {
         let idx = self.index.remove(&id)?;
+        let incident: HashSet<EdgeIndex> = self.inner.edges(idx).map(|edge| edge.id()).chain(
+            self.inner.edges_directed(idx, Direction::Incoming).map(|edge| edge.id()),
+        ).collect();
+        self.edge_index.retain(|_, edge_idx| !incident.contains(edge_idx));
         self.inner.remove_node(idx)
     }
 
@@ -315,21 +401,13 @@ impl WorldGraph {
     #[must_use]
     pub fn snapshot(&self) -> WorldGraphSnapshot {
         let nodes: Vec<WorldNode> = self.inner.node_weights().cloned().collect();
-        let edges: Vec<(WorldId, WorldId, WorldEdge)> = self
-            .inner
-            .edge_references()
-            .map(|e| {
-                (
-                    self.inner[e.source()].id(),
-                    self.inner[e.target()].id(),
-                    e.weight().clone(),
-                )
-            })
-            .collect();
+        let mut edges: Vec<WorldEdgeRecord> = self.edge_index.keys().filter_map(|id| self.edge(*id)).collect();
+        edges.sort_by_key(|record| record.id.0);
         WorldGraphSnapshot {
             schema_version: self.schema_version,
             registration: self.registration.clone(),
             next_id: self.next_id,
+            next_edge_id: self.next_edge_id,
             nodes,
             edges,
         }
@@ -348,16 +426,42 @@ impl WorldGraph {
     /// # Errors
     /// [`WorldGraphError::Serde`] on parse failure.
     pub fn from_json(bytes: &[u8]) -> Result<Self, WorldGraphError> {
-        let snap: WorldGraphSnapshot = serde_json::from_slice(bytes)?;
+        let value: serde_json::Value = serde_json::from_slice(bytes)?;
+        let version = value.get("schema_version").and_then(serde_json::Value::as_u64).unwrap_or(1) as u16;
+        if version == 0 || version > SCHEMA_VERSION {
+            return Err(WorldGraphError::UnsupportedSchema { found: version, maximum: SCHEMA_VERSION });
+        }
+        let snap = if version <= 1 {
+            let old: LegacyWorldGraphSnapshot = serde_json::from_value(value)?;
+            if old.schema_version != 1 {
+                return Err(WorldGraphError::UnsupportedSchema {
+                    found: old.schema_version,
+                    maximum: SCHEMA_VERSION,
+                });
+            }
+            WorldGraphSnapshot {
+                schema_version: SCHEMA_VERSION,
+                registration: old.registration,
+                next_id: old.next_id,
+                next_edge_id: old.edges.len() as u64 + 1,
+                nodes: old.nodes,
+                edges: old.edges.into_iter().enumerate().map(|(i, (from, to, edge))| WorldEdgeRecord {
+                    id: WorldEdgeId(i as u64 + 1), from, to, edge,
+                }).collect(),
+            }
+        } else {
+            serde_json::from_value(value)?
+        };
         let mut g = Self::new(snap.registration);
-        g.schema_version = snap.schema_version;
+        g.schema_version = SCHEMA_VERSION;
         for node in snap.nodes {
             g.upsert_node(node);
         }
-        for (from, to, edge) in snap.edges {
-            g.add_edge(from, to, edge)?;
+        for record in snap.edges {
+            g.upsert_edge(record.id, record.from, record.to, record.edge)?;
         }
-        g.next_id = snap.next_id;
+        g.next_id = g.next_id.max(snap.next_id);
+        g.next_edge_id = g.next_edge_id.max(snap.next_edge_id);
         Ok(g)
     }
 }
@@ -562,5 +666,25 @@ mod tests {
         assert_eq!(g2.observed_by(sensor), vec![room]);
         // Deterministic: re-serialising the reconstructed graph matches.
         assert_eq!(g2.to_json().unwrap(), bytes);
+    }
+
+    #[test]
+    fn stable_edge_upsert_distinguishes_parallel_edges() {
+        let mut g = WorldGraph::new(GeoRegistration::default());
+        let room = g.upsert_node(living_room());
+        let sensor = g.upsert_node(WorldNode::Sensor {
+            id: WorldId::UNASSIGNED,
+            device_id: "s".into(),
+            position: enu(0.0, 0.0),
+            modality: SensorModality::WifiCsi,
+        });
+        g.upsert_edge(WorldEdgeId(10), sensor, room, WorldEdge::Supports { strength: 0.2 }).unwrap();
+        g.upsert_edge(WorldEdgeId(11), sensor, room, WorldEdge::Supports { strength: 0.4 }).unwrap();
+        assert_eq!(g.edge_count(), 2);
+        g.upsert_edge(WorldEdgeId(10), sensor, room, WorldEdge::Supports { strength: 0.9 }).unwrap();
+        assert_eq!(g.edge_count(), 2);
+        assert!(matches!(g.edge(WorldEdgeId(10)), Some(WorldEdgeRecord { edge: WorldEdge::Supports { strength }, .. }) if strength == 0.9));
+        g.remove_edge(WorldEdgeId(11));
+        assert_eq!(g.edge_count(), 1);
     }
 }

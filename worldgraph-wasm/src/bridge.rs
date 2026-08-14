@@ -85,6 +85,12 @@ impl WorldgraphBridge {
         to_js(&core::edges(&self.graph).map_err(jserr)?)
     }
 
+    /// Apply a single streamed `{op: ...}` message.
+    #[wasm_bindgen(js_name = applyMessageJson)]
+    pub fn apply_message_json(&mut self, json: &str) -> Result<(), JsValue> {
+        core::apply_message_json(&mut self.graph, json).map_err(jserr)
+    }
+
     /// Render-ready primitives (ENU-mapped, coloured) for the whole twin.
     #[wasm_bindgen(js_name = getRenderPrimitives)]
     pub fn get_render_primitives(&self) -> Result<JsValue, JsValue> {

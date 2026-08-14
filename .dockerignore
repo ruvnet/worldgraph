@@ -1,0 +1,9 @@
+.git
+.github
+.swarm
+target
+node_modules
+supersplat-bridge/node_modules
+supersplat-bridge/dist
+worldgraph-wasm/pkg
+*.log

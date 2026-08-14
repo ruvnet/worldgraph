@@ -1,0 +1,21 @@
+services:
+  worldgraph-stream:
+    build:
+      context: .
+      target: runtime
+    image: worldgraph-stream:local
+    environment:
+      WORLDGRAPH_BIND: 0.0.0.0:8080
+      WORLDGRAPH_TOKEN_SECRET: ${WORLDGRAPH_TOKEN_SECRET:?set a random secret of at least 32 bytes}
+      WORLDGRAPH_TOKEN_AUDIENCE: ${WORLDGRAPH_TOKEN_AUDIENCE:-worldgraph-stream}
+    ports:
+      - "${WORLDGRAPH_PORT:-8080}:8080"
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128

@@ -28,6 +28,15 @@ export type SensorModality = 'wifi_csi' | 'mm_wave' | 'uwb' | 'presence';
 /** Static anchor classification. */
 export type AnchorKind = 'reflector' | 'furniture' | 'uwb_beacon';
 
+/** Runtime-loadable object metadata persisted on an object anchor. */
+export type AssetFormat = 'gltf' | 'glb';
+export interface AssetRef {
+  url: string;
+  format: AssetFormat;
+  /** Subresource-integrity value, normally `sha256-<base64>`. */
+  integrity?: string;
+}
+
 /** Mandatory provenance carried by every semantic belief. */
 export interface SemanticProvenance {
   evidence: string[];
@@ -45,7 +54,7 @@ export type WorldNode =
   | { kind: 'sensor'; id: number; device_id: string; position: EnuPoint; modality: SensorModality }
   | { kind: 'rf_link'; id: number; tx: number; rx: number; link_group_id: string | null; center_freq_mhz: number }
   | { kind: 'person_track'; id: number; track_id: number; last_position: EnuPoint; reid_embedding_ref: string | null }
-  | { kind: 'object_anchor'; id: number; position: EnuPoint; anchor_kind: AnchorKind; confidence: number }
+  | { kind: 'object_anchor'; id: number; position: EnuPoint; anchor_kind: AnchorKind; confidence: number; asset?: AssetRef | null }
   | { kind: 'event'; id: number; event_type: string; at_unix_ms: number; located_in: number | null }
   | { kind: 'semantic_state'; id: number; statement: string; confidence: number; provenance: SemanticProvenance; valid_from_unix_ms: number };
 
@@ -62,8 +71,46 @@ export type WorldEdge =
 /** Edge as serialized by the snapshot: `[fromId, toId, edge]`. */
 export type WorldEdgeTriple = [number, number, WorldEdge];
 
+/** Stable edge representation used by schema v2+ snapshots and deltas. */
+export interface WorldEdgeRecord {
+  id: number;
+  from: number;
+  to: number;
+  edge: WorldEdge;
+}
+
+export interface LegacyWorldGraphSnapshot {
+  schema_version: 1;
+  registration: GeoRegistration;
+  next_id: number;
+  nodes: WorldNode[];
+  edges: WorldEdgeTriple[];
+}
+
+export interface WorldGraphSnapshot {
+  schema_version: number;
+  registration: GeoRegistration;
+  next_id: number;
+  next_edge_id: number;
+  nodes: WorldNode[];
+  edges: WorldEdgeRecord[];
+}
+
+export interface GeoRegistration {
+  origin: { lat: number; lon: number; alt: number };
+  heading_deg: number;
+  scale: number;
+}
+
+export interface PresenceUpdate {
+  viewer_id: number;
+  position: EnuPoint;
+  active: boolean;
+}
+
 /** Drawable shape for a render primitive (1:1 with a PlayCanvas render type). */
-export type PrimitiveShape = 'box' | 'sphere' | 'cylinder' | 'capsule' | 'line';
+export type SolidShape = 'box' | 'sphere' | 'cylinder' | 'capsule';
+export type PrimitiveShape = SolidShape | 'line' | 'asset';
 
 /** RGBA, each component in 0..1. */
 export type Rgba = [number, number, number, number];
@@ -74,19 +121,41 @@ export type Vec3 = [number, number, number];
  * A fully ENU-mapped, render-ready primitive produced by the Rust core. The
  * frontend instantiates these verbatim — it never re-derives coordinates.
  */
-export interface RenderPrimitive {
+interface RenderPrimitiveBase {
   id: number;
   kind: string;
-  shape: PrimitiveShape;
   label: string;
   /** PlayCanvas position [x, y, z]. */
   position: Vec3;
   /** PlayCanvas local scale [x, y, z]. */
   scale: Vec3;
   color: Rgba;
-  /** Endpoint for `line` primitives. */
-  to?: Vec3;
   transparent: boolean;
+}
+
+export interface SolidRenderPrimitive extends RenderPrimitiveBase {
+  shape: SolidShape;
+}
+
+export interface LineRenderPrimitive extends RenderPrimitiveBase {
+  shape: 'line';
+  to: Vec3;
+}
+
+export interface AssetRenderPrimitive extends RenderPrimitiveBase {
+  shape: 'asset';
+  asset: AssetRef;
+  /** Shape shown until the asynchronous asset is ready. */
+  placeholderShape?: SolidShape;
+}
+
+/** Render contract discriminated by `shape`; invalid combinations do not type-check. */
+export type RenderPrimitive = SolidRenderPrimitive | LineRenderPrimitive | AssetRenderPrimitive;
+
+/** Renderer/device capabilities advertised to use cases. */
+export interface RendererCaps {
+  webgpu: boolean;
+  xr: boolean;
 }
 
 /** One row of a provenance / audit card. */

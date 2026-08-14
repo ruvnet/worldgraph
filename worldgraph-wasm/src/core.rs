@@ -9,8 +9,9 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use wifi_densepose_worldgraph::{
-    AnchorKind, EnuPoint, SensorModality, WorldEdge, WorldGraph, WorldId, WorldNode, ZoneBoundsEnu,
+    AnchorKind, AssetRef, EnuPoint, SensorModality, WorldEdge, WorldGraph, WorldId, WorldNode, ZoneBoundsEnu,
 };
+use worldgraph_stream::TwinMessage;
 
 use crate::enu::{enu_to_pc, enu_xyz_to_pc, pc_to_enu};
 
@@ -45,6 +46,8 @@ pub enum PrimitiveShape {
     Capsule,
     /// `app.drawLine(position, to, color)` — walls, trajectory segments.
     Line,
+    /// Runtime glTF/GLB asset.
+    Asset,
 }
 
 /// A fully ENU-mapped, render-ready primitive. The TypeScript side instantiates
@@ -71,6 +74,12 @@ pub struct RenderPrimitive {
     pub to: Option<[f64; 3]>,
     /// Translucent volume → TS sets `blendType = pc.BLEND_NORMAL`.
     pub transparent: bool,
+    /// Runtime asset metadata when `shape == asset`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub asset: Option<AssetRef>,
+    /// Placeholder while an asset is loading.
+    #[serde(rename = "placeholderShape", skip_serializing_if = "Option::is_none")]
+    pub placeholder_shape: Option<PrimitiveShape>,
 }
 
 /// One row of a provenance / audit card.
@@ -130,8 +139,10 @@ pub fn nodes(g: &WorldGraph) -> CoreResult<Vec<WorldNode>> {
 /// All live edges as `(from, to, edge)` triples.
 pub fn edges(g: &WorldGraph) -> CoreResult<Vec<(WorldId, WorldId, WorldEdge)>> {
     let snap = snapshot_value(g)?;
-    serde_json::from_value(snap.get("edges").cloned().unwrap_or(Value::Null))
-        .map_err(|e| format!("decode edges: {e}"))
+    let records: Vec<wifi_densepose_worldgraph::WorldEdgeRecord> =
+        serde_json::from_value(snap.get("edges").cloned().unwrap_or(Value::Null))
+            .map_err(|e| format!("decode edges: {e}"))?;
+    Ok(records.into_iter().map(|r| (r.from, r.to, r.edge)).collect())
 }
 
 /// Physically renderable nodes only (rooms, zones, sensors, anchors, people…).
@@ -142,6 +153,24 @@ pub fn physical_nodes(g: &WorldGraph) -> CoreResult<Vec<WorldNode>> {
 fn snapshot_value(g: &WorldGraph) -> CoreResult<Value> {
     let bytes = g.to_json().map_err(|e| format!("snapshot: {e}"))?;
     serde_json::from_slice(&bytes).map_err(|e| format!("parse snapshot: {e}"))
+}
+
+/// Apply one documented `TwinMessage` JSON object to the browser graph.
+pub fn apply_message_json(g: &mut WorldGraph, json: &str) -> CoreResult<()> {
+    let message: TwinMessage = serde_json::from_str(json).map_err(|e| format!("decode twin message: {e}"))?;
+    match message {
+        TwinMessage::Snapshot { graph_schema_version: _, rvf_json } => {
+            *g = WorldGraph::from_json(rvf_json.as_bytes()).map_err(|e| format!("load snapshot: {e}"))?;
+        }
+        TwinMessage::UpsertNode { node } => { g.upsert_node(node); }
+        TwinMessage::RemoveNode { id } => { g.remove_node(id); }
+        TwinMessage::UpsertEdge { id, from, to, edge } => {
+            g.upsert_edge(id, from, to, edge).map_err(|e| format!("upsert edge: {e}"))?;
+        }
+        TwinMessage::RemoveEdge { id } => { g.remove_edge(id); }
+        TwinMessage::Presence { .. } => {}
+    }
+    Ok(())
 }
 
 /// Build the render primitives for every physical node in the graph.
@@ -170,17 +199,21 @@ pub fn primitive_for(node: &WorldNode) -> Option<RenderPrimitive> {
             color: modality_color(*modality),
             to: None,
             transparent: false,
+            asset: None,
+            placeholder_shape: None,
         }),
-        WorldNode::ObjectAnchor { id, position, anchor_kind, confidence } => Some(RenderPrimitive {
+        WorldNode::ObjectAnchor { id, position, anchor_kind, confidence, asset } => Some(RenderPrimitive {
             id: id.0,
             kind: "object_anchor".into(),
-            shape: PrimitiveShape::Box,
+            shape: if asset.is_some() { PrimitiveShape::Asset } else { PrimitiveShape::Box },
             label: anchor_label(*anchor_kind),
             position: enu_to_pc(position),
             scale: [MARKER_SIZE_M * 1.5; 3],
             color: confidence_color(*confidence),
             to: None,
             transparent: false,
+            asset: asset.clone(),
+            placeholder_shape: asset.as_ref().map(|_| PrimitiveShape::Box),
         }),
         WorldNode::PersonTrack { id, track_id, last_position, .. } => {
             let mut pos = enu_to_pc(last_position);
@@ -196,6 +229,8 @@ pub fn primitive_for(node: &WorldNode) -> Option<RenderPrimitive> {
                 color: [0.0, 0.85, 1.0, 0.85],
                 to: None,
                 transparent: true,
+                asset: None,
+                placeholder_shape: None,
             })
         }
         WorldNode::Doorway { id, center, width_m } => Some(RenderPrimitive {
@@ -208,6 +243,8 @@ pub fn primitive_for(node: &WorldNode) -> Option<RenderPrimitive> {
             color: [1.0, 0.85, 0.1, 0.5],
             to: None,
             transparent: true,
+            asset: None,
+            placeholder_shape: None,
         }),
         WorldNode::Wall { id, a, b, .. } => Some(RenderPrimitive {
             id: id.0,
@@ -219,6 +256,8 @@ pub fn primitive_for(node: &WorldNode) -> Option<RenderPrimitive> {
             color: [0.6, 0.6, 0.65, 1.0],
             to: Some(enu_to_pc(b)),
             transparent: false,
+            asset: None,
+            placeholder_shape: None,
         }),
         // Abstract nodes are not drawn as fixed geometry.
         WorldNode::RfLink { .. } | WorldNode::Event { .. } | WorldNode::SemanticState { .. } => None,
@@ -244,6 +283,8 @@ fn volume_primitive(
             color,
             to: None,
             transparent: true,
+            asset: None,
+            placeholder_shape: None,
         },
         other => {
             let (min_e, min_n, max_e, max_n) = bbox_2d(other);
@@ -257,6 +298,8 @@ fn volume_primitive(
                 color,
                 to: None,
                 transparent: true,
+                asset: None,
+                placeholder_shape: None,
             }
         }
     }
@@ -643,5 +686,41 @@ mod tests {
         assert!(es
             .iter()
             .any(|(f, t, e)| *f == sensor && *t == room && matches!(e, WorldEdge::Observes { .. })));
+    }
+
+    #[test]
+    fn streamed_wire_message_mutates_graph() {
+        let mut g = WorldGraph::new(wifi_densepose_geo::GeoRegistration::default());
+        let message = serde_json::json!({
+            "op": "upsert_node",
+            "node": {
+                "kind": "room", "id": 42, "area_id": null, "name": "Streamed",
+                "bounds_enu": { "shape": "rectangle", "min_e": 0.0, "min_n": 0.0, "max_e": 1.0, "max_n": 1.0 },
+                "floor": 0
+            }
+        });
+        apply_message_json(&mut g, &message.to_string()).unwrap();
+        assert!(matches!(g.node(WorldId(42)), Some(WorldNode::Room { name, .. }) if name == "Streamed"));
+        apply_message_json(&mut g, r#"{"op":"remove_node","id":42}"#).unwrap();
+        assert!(g.node(WorldId(42)).is_none());
+    }
+
+    #[test]
+    fn object_anchor_asset_emits_asset_primitive() {
+        let node = WorldNode::ObjectAnchor {
+            id: WorldId(8),
+            position: enu(1.0, 2.0),
+            anchor_kind: AnchorKind::Furniture,
+            confidence: 0.9,
+            asset: Some(AssetRef {
+                url: "https://assets.example/chair.glb".into(),
+                format: wifi_densepose_worldgraph::AssetFormat::Glb,
+                integrity: Some("sha256-example".into()),
+            }),
+        };
+        let primitive = primitive_for(&node).unwrap();
+        assert_eq!(primitive.shape, PrimitiveShape::Asset);
+        assert_eq!(primitive.placeholder_shape, Some(PrimitiveShape::Box));
+        assert_eq!(primitive.asset.unwrap().url, "https://assets.example/chair.glb");
     }
 }

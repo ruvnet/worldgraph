@@ -87,10 +87,9 @@ impl SceneBounds {
     /// Maps a height value (metres) to a voxel *z* index in `[0, depth-1]`.
     pub fn to_voxel_z(up_m: f64) -> usize {
         let fz = (up_m as f32).clamp(0.0, MAX_HEIGHT_M) / MAX_HEIGHT_M;
-        let vz = (fz * GRID_DEPTH as f32)
+        (fz * GRID_DEPTH as f32)
             .floor()
-            .clamp(0.0, (GRID_DEPTH - 1) as f32) as usize;
-        vz
+            .clamp(0.0, (GRID_DEPTH - 1) as f32) as usize
     }
 }
 
@@ -165,7 +164,7 @@ mod tests {
         let g = worldgraph_to_occupancy(&persons, &bounds, 0.1);
 
         // At ENU (0,0,0): vx=100, vy=100, vz=0
-        let expected_idx = 0 * GRID_HEIGHT * GRID_WIDTH + 100 * GRID_WIDTH + 100;
+        let expected_idx = 100 * GRID_WIDTH + 100;
         assert_eq!(g.voxels[expected_idx], CLASS_PERSON);
         // All other voxels must still be free
         let person_count = g.voxels.iter().filter(|&&v| v == CLASS_PERSON).count();

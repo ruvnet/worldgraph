@@ -48,6 +48,8 @@ pub fn trajectory_overlay(track_id: u64, from: &EnuPoint, steps: &[TrajectorySte
             color: [t, 1.0 - t, 0.2, alpha],
             to: Some(next),
             transparent: true,
+            asset: None,
+            placeholder_shape: None,
         });
         prev = next;
     }

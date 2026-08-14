@@ -7,7 +7,7 @@
 // frames instead of being torn down and rebuilt — and it is fully unit-testable
 // with a mock backend (no PlayCanvas, no browser).
 
-import type { RenderPrimitive, Vec3, Rgba } from './types.js';
+import type { AssetFormat, RenderPrimitive, Vec3, Rgba } from './types.js';
 
 /** An opaque per-primitive handle returned by the backend (e.g. a pc.Entity). */
 export type EntityHandle = unknown;
@@ -20,6 +20,8 @@ export type EntityHandle = unknown;
 export interface SceneBackend {
   /** Instantiate a solid primitive (box/sphere/cylinder/capsule). */
   create(prim: RenderPrimitive): EntityHandle;
+  /** Load and attach a runtime asset. Resolves to its scene entity. */
+  loadAsset(url: string, format: AssetFormat, integrity: string | undefined, signal: AbortSignal): Promise<EntityHandle>;
   /** Update an existing entity's position / scale / colour in place. */
   update(handle: EntityHandle, prim: RenderPrimitive): void;
   /** Destroy an entity removed from the twin. */
@@ -36,6 +38,7 @@ export function primitiveKey(p: RenderPrimitive): string {
 interface Tracked {
   handle: EntityHandle;
   prim: RenderPrimitive;
+  load?: { generation: number; controller: AbortController };
 }
 
 /**
@@ -47,6 +50,7 @@ interface Tracked {
  */
 export class WorldgraphScene {
   private readonly tracked = new Map<string, Tracked>();
+  private generation = 0;
 
   constructor(private readonly backend: SceneBackend) {}
 
@@ -62,40 +66,81 @@ export class WorldgraphScene {
     for (const prim of primitives) {
       if (prim.shape === 'line') {
         // Immediate-mode: drawn fresh every frame, never tracked.
-        this.backend.drawLine(prim.position, prim.to ?? prim.position, prim.color);
+        this.backend.drawLine(prim.position, prim.to, prim.color);
         continue;
       }
       const key = primitiveKey(prim);
       seen.add(key);
       const existing = this.tracked.get(key);
       if (existing) {
-        if (!samePlacement(existing.prim, prim)) {
+        if (!sameIdentity(existing.prim, prim)) {
+          this.remove(key, existing);
+          this.create(key, prim);
+        } else if (!samePlacement(existing.prim, prim)) {
           this.backend.update(existing.handle, prim);
           existing.prim = prim;
         }
       } else {
-        this.tracked.set(key, { handle: this.backend.create(prim), prim });
+        this.create(key, prim);
       }
     }
 
     // Destroy anything no longer present (a person who left, a deleted room).
     for (const [key, t] of this.tracked) {
       if (!seen.has(key)) {
-        this.backend.destroy(t.handle);
-        this.tracked.delete(key);
+        this.remove(key, t);
       }
     }
   }
 
   /** Tear down all tracked entities. */
   clear(): void {
-    for (const t of this.tracked.values()) this.backend.destroy(t.handle);
+    for (const [key, t] of this.tracked) this.remove(key, t);
     this.tracked.clear();
+  }
+
+  private create(key: string, prim: RenderPrimitive): void {
+    const tracked: Tracked = { handle: this.backend.create(prim), prim };
+    this.tracked.set(key, tracked);
+    if (prim.shape !== 'asset') return;
+
+    const generation = ++this.generation;
+    const controller = new AbortController();
+    tracked.load = { generation, controller };
+    void this.backend.loadAsset(prim.asset.url, prim.asset.format, prim.asset.integrity, controller.signal)
+      .then((loaded) => {
+        const current = this.tracked.get(key);
+        if (!current || current.load?.generation !== generation || controller.signal.aborted) {
+          this.backend.destroy(loaded);
+          return;
+        }
+        this.backend.update(loaded, current.prim);
+        this.backend.destroy(current.handle);
+        current.handle = loaded;
+        delete current.load;
+      })
+      .catch(() => {
+        // A failed or aborted load intentionally leaves the placeholder visible.
+      });
+  }
+
+  private remove(key: string, tracked: Tracked): void {
+    tracked.load?.controller.abort();
+    this.backend.destroy(tracked.handle);
+    this.tracked.delete(key);
   }
 }
 
+function sameIdentity(a: RenderPrimitive, b: RenderPrimitive): boolean {
+  if (a.shape !== b.shape) return false;
+  if (a.shape !== 'asset' || b.shape !== 'asset') return true;
+  return a.asset.url === b.asset.url && a.asset.format === b.asset.format &&
+    a.asset.integrity === b.asset.integrity;
+}
+
 function samePlacement(a: RenderPrimitive, b: RenderPrimitive): boolean {
-  return vec3Eq(a.position, b.position) && vec3Eq(a.scale, b.scale) && rgbaEq(a.color, b.color);
+  return vec3Eq(a.position, b.position) && vec3Eq(a.scale, b.scale) && rgbaEq(a.color, b.color) &&
+    a.transparent === b.transparent;
 }
 
 function vec3Eq(a: Vec3, b: Vec3): boolean {

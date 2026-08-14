@@ -64,6 +64,7 @@ cargo add wifi-densepose-worldgraph   # the typed digital-twin graph
 | [`wifi-densepose-geo`](./wifi-densepose-geo) | **Geospatial grounding** — IP geolocation, satellite tiles, SRTM elevation, OSM buildings/roads, ENU↔geo transforms |
 | [`wifi-densepose-worldgraph`](./wifi-densepose-worldgraph) | **The digital twin** — a `petgraph` graph of typed nodes + relations; provenance-mandatory semantic beliefs; JSON persistence |
 | [`wifi-densepose-worldmodel`](./wifi-densepose-worldmodel) | **Predictive layer** — bridges person-track history to an OccWorld occupancy model and returns trajectory priors |
+| [`worldgraph-stream`](./worldgraph-stream) | **Live replication** — authorized snapshots/deltas, pseudonymous presence, and the self-hosted WebSocket server |
 
 ---
 
@@ -97,6 +98,19 @@ Part of the [RuView / wifi-densepose](https://github.com/ruvnet/wifi-densepose) 
 ```bash
 cargo build && cargo test      # the Rust library
 npm install && npm test        # the agent harness
+cd supersplat-bridge && npm ci && npm test && npm run build
+```
+
+## Self-host the live stream
+
+The stream server validates audience-bound, short-lived JWTs, applies the same
+privacy policy to snapshots and deltas, and exposes authenticated producer
+ingest. See [`deploy/README.md`](deploy/README.md) for token scopes, TLS proxy
+requirements, and the hardened Docker Compose deployment.
+
+```bash
+export WORLDGRAPH_TOKEN_SECRET="$(openssl rand -base64 48)"
+docker compose up --build --detach
 ```
 
 ## License

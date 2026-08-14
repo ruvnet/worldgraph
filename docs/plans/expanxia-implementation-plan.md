@@ -1,6 +1,6 @@
 # Implementation plan — Expanxia-style interactive 3D platform capabilities for worldgraph
 
-- **Status:** Proposed (plan only — no code in this change)
+- **Status:** Implemented baseline (WebSocket deployment; browser WebTransport adapter)
 - **Date:** 2026-08-14
 - **Relates to:** ADR-200 (WASM bridge), ADR-201 (coordinate frame), ADR-202
   (spatial applications), ADR-203 (evolution loop), ADR-204 (Rust generative
@@ -335,15 +335,26 @@ Each phase adds selection pressure before it can merge:
 5. Existing gates unchanged: `cargo test` all crates, `tsc --noEmit` strict,
    `vitest run`, workspace `unsafe_code = "forbid"`, no new warnings.
 
-## 8. Open questions for the user
+## 8. Resolved implementation choices
 
-1. Transport: is WebTransport-first (with WebSocket fallback) acceptable, or is
-   WebSocket-only preferred for the first cut? (WebTransport needs an HTTP/3
-   capable deployment; the fallback keeps GitHub Pages demos working.)
-2. Should viewer presence (Phase 2) be visible in the exported RVF/JSON at all,
-   or strictly ephemeral? (Plan assumes strictly ephemeral.)
-3. Any appetite for adopting Expanxia's compressed-splat direction (e.g. SOG or
-   `.ply`→compressed conversion) in Phase 3, or keep splat loading as-is and
-   compress only textures?
-4. Should an Oasis-style learned simulator remain a follow-on adapter, or is an
-   action-in/prediction-out world-model session part of the near-term product?
+1. The browser has a bounded reliable WebTransport adapter with automatic
+   WebSocket fallback. The shipped Rust server and container use WebSocket;
+   native HTTP/3 certificate/runtime management remains an edge deployment
+   concern rather than a requirement for the first self-hosted artifact.
+2. Viewer presence is strictly ephemeral, server-pseudonymized, and never
+   written to RVF/JSON.
+3. Runtime assets support glTF/GLB plus integrity and origin policy. Splat
+   conversion/compression remains outside this bridge.
+4. The provider-neutral action-in/frame-out session is implemented in
+   `wifi-densepose-worldmodel` with deterministic mock and external Unix-sidecar
+   providers. Generated media remains separate from authoritative graph state.
+
+## 9. Implementation record
+
+The baseline includes schema-v2 stable edge records with deterministic v1
+migration, replay-safe epoch/sequence handling, privacy-filtered fan-out,
+authenticated producer ingest, token refresh/expiry, multi-viewer presence,
+WASM message application, cancellable runtime assets, WebGPU/WebGL2 selection,
+WebXR delegation, ADR-204 provider sessions, and a hardened container manifest.
+CI runs strict all-feature Rust Clippy/tests, browser typecheck/tests/build, and
+a non-publishing container build.
