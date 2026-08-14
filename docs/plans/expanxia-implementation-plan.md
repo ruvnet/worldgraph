@@ -2,7 +2,9 @@
 
 - **Status:** Proposed (plan only — no code in this change)
 - **Date:** 2026-08-14
-- **Relates to:** ADR-200 (WASM bridge), ADR-201 (coordinate frame), ADR-202 (spatial applications), ADR-203 (evolution loop)
+- **Relates to:** ADR-200 (WASM bridge), ADR-201 (coordinate frame), ADR-202
+  (spatial applications), ADR-203 (evolution loop), ADR-204 (Rust generative
+  world-model runtime)
 - **Produced by:** `/plan-change` (architect step; hand to `implementer` per phase)
 
 ## 1. Goal (one sentence)
@@ -55,7 +57,8 @@ Its session design does provide useful constraints for worldgraph:
   and testing do not depend directly on the transport implementation.
 
 Generated frames from a learned model are predictions, not sensed graph facts.
-Any future Oasis-style adapter belongs behind `wifi-densepose-worldmodel`, with
+Per ADR-204, any future Oasis-style adapter belongs behind
+`wifi-densepose-worldmodel`, with
 its output labelled as simulated and kept out of the authoritative
 `WorldGraph` unless converted into a `SemanticState` with explicit provenance.
 
@@ -273,10 +276,11 @@ the path is considered non-regressing.
 - **Self-hosting** = the `server` feature binary + a Dockerfile; no code beyond
   Phase 1/2.
 - **Learned simulation adapter (optional)** = an Oasis-style stateful adapter
-  behind `wifi-densepose-worldmodel`: explicit initialize/reset/step/finish,
-  strict bounded actions, negotiated output streams, and a consumer seam for
-  preview/recording. Generated frames remain a simulation side channel; only
-  derived claims with `SemanticProvenance` may enter `WorldGraph`.
+  behind `wifi-densepose-worldmodel` per ADR-204: explicit
+  initialize/reset/step/finish, strict bounded actions, negotiated output
+  streams, and a consumer seam for preview/recording. Generated frames remain a
+  simulation side channel; only derived claims with `SemanticProvenance` may
+  enter `WorldGraph`.
 
 This phase is intentionally not specced file-by-file — it should be re-planned
 after Phase 1 ships and real fan-out behavior is observed.
