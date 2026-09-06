@@ -76,6 +76,7 @@ test('plays a Gaussian capture with verified provenance and holds the last valid
   await expect(page.locator('#graph-count')).toHaveAttribute('data-world','capture');
   await expect(page.getByRole('slider',{name:'Capture time'})).toHaveAttribute('max','4');
   await inspector(page);await expect(page.locator('#capture-source')).toHaveText('synthetic');
+  await page.getByRole('button',{name:'Play capture'}).click();await expect(page.locator('#time')).not.toHaveText('00:00.0');await page.getByRole('button',{name:'Pause capture'}).click();await captureSeek(page,0,0);
   const initial=await graphJson(page);const graph=JSON.parse(initial);
   expect(graph.nodes).toHaveLength(2);expect(graph.edges).toHaveLength(1);
   const provenance=JSON.parse(graph.nodes.find((n:{id:number})=>n.id===41001).statement);
@@ -116,8 +117,9 @@ test('ignores an experiment read completed after a newer environment choice',asy
   const wait=page.waitForEvent('download');await page.getByRole('button',{name:'Export experiment',exact:true}).click();
   const payload=await readFile((await (await wait).path())!);
   // Controlled fixture delays only this selected file; no production test hook.
-  await page.evaluate(()=>{const original=File.prototype.text;File.prototype.text=function(){const pending=original.call(this);if(this.name!=='delayed.json')return pending;return pending.then(value=>new Promise<string>(resolve=>{document.addEventListener('release-test-file',()=>resolve(value),{once:true});}));};});
+  await page.evaluate(()=>{const original=File.prototype.text;File.prototype.text=function(){const pending=original.call(this);if(this.name!=='delayed.json')return pending;return pending.then(value=>new Promise<string>(resolve=>{document.addEventListener('release-test-file',()=>resolve(value),{once:true});document.documentElement.dataset.testFileReadReady='true';}));};});
   await page.locator('#experiment-file').setInputFiles({name:'delayed.json',mimeType:'application/json',buffer:payload});
+  await expect(page.locator('html')).toHaveAttribute('data-test-file-read-ready','true');
   await page.getByRole('button',{name:'02 Hospitality lab'}).click();
   await page.evaluate(()=>document.dispatchEvent(new Event('release-test-file')));
   await expect(page.locator('#scene-kicker')).toContainText('HOSPITALITY');

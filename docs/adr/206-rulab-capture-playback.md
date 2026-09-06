@@ -1,6 +1,6 @@
 # ADR 206: RuLab time-indexed capture playback
 
-Status: implementation and independent review in progress on `feat/rulab-capture-playback`; this document does not certify release acceptance.
+Status: implemented and independently reviewed in source on `feat/rulab-capture-playback`; complete CI and hosted capture-playback acceptance are pending.
 
 Date: 2026-09-06.
 
@@ -18,7 +18,7 @@ The authored experiment, a single-file Gaussian preview, and a temporal capture 
 
 Select the manifest named exactly `capture.json` and every frame it names in one local multi-file selection. A bundle is not a ZIP archive, directory traversal request, URL list, remote inference request, or upload. Frame filenames are flat, case-sensitive ASCII names. The selected set must match the manifest exactly; extra or missing files are rejected. Names that collide ignoring case are rejected.
 
-The exact object shapes are `CaptureManifest`, `CaptureFrame`, and `CaptureBundle` in [`rulab/src/capture/types.ts`](../../rulab/src/capture/types.ts). Unknown object fields are rejected by the parser.
+The exact object shapes are `CaptureManifest`, `CaptureFrame`, and `CaptureBundle` in [`rulab/src/capture/types.ts`](../../rulab/src/capture/types.ts). Unknown object fields and duplicate JSON keys, including escaped aliases of the same key, are rejected by the parser.
 
 | Manifest field | Version 1 requirement |
 | --- | --- |
@@ -39,9 +39,9 @@ The manifest is at most 64 KiB. Each frame is at most 64 MiB and 500,000 decoded
 
 The executable example is [`capture.json`](../../rulab/public/capture-example/capture.json) beside its four frame files. It declares `Synthetic scanner study`, timestamps 0, 1, 2, and 3 seconds, duration 4 seconds, and shared bounds `[-5,-0.2,-4]` to `[5,4.5,4]`. Each frame contains 2,847 Gaussians in 91,104 bytes. The 921-byte manifest and four samples total 365,337 bytes. These are fixture dimensions and byte counts, not capture fidelity or rendering speed measurements. Seeking from 3 to 4 seconds holds the sample at 3 seconds.
 
-The manifest has one shared coordinate frame and bounds for the entire sequence. Assets must already agree on those coordinates. Display normalization uses that same bounding volume for every frame; independent per-frame recentring or rescaling would erase or fabricate apparent motion. The normalized preview is not registered to the authored lab's ENU frame. No transform inferred from camera imagery or measured anchors is included.
+The manifest has one shared coordinate frame and bounds for the entire sequence. Assets must already agree on those coordinates. Display normalization uses that same bounding volume for every frame; independent per-frame recentring or rescaling would erase or fabricate apparent motion. The renderer additionally requires positive extent on every axis, a longest extent of at least 0.01 metres, and finite normalization values. Decoded frame bounds must fit the declared bounds within a tolerance of 0.01 metres plus 0.1% of the longest extent. The normalized preview is not registered to the authored lab's ENU frame. No transform inferred from camera imagery or measured anchors is included.
 
-`capture.json` is hashed from its exact UTF-8 bytes. Each selected frame is hashed before preflight and decoding, and the byte snapshot that passes the hash check is the snapshot passed onward. Whitespace changes therefore change the manifest identity. The parsed manifest and file table are immutable to callers. Frames are verified on demand; accepting a manifest does not assert that every later frame has already decoded successfully.
+`capture.json` is hashed from its exact UTF-8 bytes. Each selected frame is hashed before preflight and decoding, and the byte snapshot that passes the hash check is the snapshot passed onward. Whitespace changes therefore change the manifest identity. Export returns an immutable snapshot of the original manifest bytes, preserving whitespace and any UTF-8 byte-order mark so that an export and reimport retain that identity. The parsed manifest and file table are immutable to callers. Frames are verified on demand; accepting a manifest does not assert that every later frame has already decoded successfully.
 
 ## Requested time and displayed time
 
@@ -49,7 +49,7 @@ Requested time is the user's clamped playhead position. Displayed time is the ti
 
 Playback owns at most one displayed asset and one in-flight decode. Repeated seeks coalesce to the latest desired sample. A late result cannot replace a more recently requested frame. The previous asset remains visible until a replacement successfully commits; failed candidates are disposed, an error is exposed, and retries are explicit. A suspended or disposed player rejects subsequent asynchronous results. Cancellation invalidates acceptance of a result; it does not promise immediate interruption of an SDK worker already decoding bytes.
 
-An import is transactional: manifest validation and the initial frame prepare before replacing accepted application state. Camera navigation does not advance the capture. Context loss and final disposal must suspend or invalidate pending work; a cached page may preserve resources while pausing playback. The independent review records verification of those boundaries against the final implementation.
+An import is transactional: manifest validation and the initial frame prepare before replacing accepted application state. Camera navigation does not advance the capture. All file imports share serialization and generation checks, including experiment JSON imports when WebGL is unavailable. Context loss and final disposal invalidate pending work; a cached page preserves resources while pausing playback. Renderer and UI metric windows reset on accepted scene transitions so evidence is not attributed to a different source. The independent review records source verification of these boundaries; execution of the browser regressions remains a separate CI gate.
 
 ## Rust metadata projection
 
