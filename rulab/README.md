@@ -4,7 +4,7 @@ RuLab brings an interactive laboratory into WorldGraph. Move independently throu
 
 The default scene contains **42,442 authored Gaussian primitives** alongside physically based Three.js architecture. This is an authored spatial demonstration with real Gaussian rendering and real Rust WorldGraph execution. It does not reconstruct the reference images, run a trained predictive world model, or control physical equipment.
 
-The public build targets [WorldGraph on GitHub Pages](https://ruvnet.github.io/worldgraph/). The validation workflow retains its build and evidence artifacts. Automatic deployment currently fails before its job steps; verified artifacts can be published through the protected branch workflow without changing environment protections. Check [release metadata](https://ruvnet.github.io/worldgraph/release.json) for the deployed source and evidence. See [ADR 205](../docs/adr/205-rulab-temporal-gaussian-world.md) for the design decision, research comparisons, and acceptance boundaries.
+The public build targets [WorldGraph on GitHub Pages](https://ruvnet.github.io/worldgraph/). The validation workflow retains its build and evidence artifacts. Automatic deployment currently fails before its job steps; verified artifacts can be published from the `gh-pages` branch without changing environment protections. Check [release metadata](https://ruvnet.github.io/worldgraph/release.json) for the deployed source and evidence. See [ADR 205](../docs/adr/205-rulab-temporal-gaussian-world.md) for the design decision, research comparisons, and acceptance boundaries.
 
 ## What runs
 
