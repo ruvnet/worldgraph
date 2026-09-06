@@ -84,9 +84,11 @@ pub fn parse_hgt(data: &[u8], origin_lat: f64, origin_lon: f64) -> Result<Elevat
     }
 
     let heights: Vec<f32> = data
-        .chunks_exact(2)
+        .as_chunks::<2>()
+        .0
+        .iter()
         .map(|c| {
-            let v = i16::from_be_bytes([c[0], c[1]]);
+            let v = i16::from_be_bytes(*c);
             if v == -32768 {
                 0.0
             } else {

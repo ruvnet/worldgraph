@@ -1,0 +1,91 @@
+name: RuLab 4D validation and Pages
+
+on:
+  pull_request:
+    paths:
+      - 'rulab/**'
+      - 'bin/**'
+      - '__tests__/**'
+      - 'worldgraph-wasm/**'
+      - 'wifi-densepose-*/**'
+      - 'Cargo.*'
+      - 'package*.json'
+      - '.github/workflows/rulab.yml'
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rulab-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CI: 'true'
+      WORLDGRAPH_BASE_PATH: /worldgraph/
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            rulab/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - name: Install pinned WASM builder
+        run: cargo install wasm-pack --version 0.14.0 --locked
+      - name: Install harness dependencies
+        run: npm ci
+      - name: Install RuLab dependencies
+        working-directory: rulab
+        run: npm ci
+      - name: Install Chromium for rendering validation
+        working-directory: rulab
+        run: npx --no-install playwright install --with-deps chromium
+      - name: Run fixed source, WASM, unit, build, and browser gates
+        run: node bin/cli.js rulab verify
+      - name: Upload validation evidence and browser artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rulab-evidence-${{ github.sha }}
+          path: |
+            .artifacts/rulab/
+            rulab/test-results/
+            rulab/playwright-report/
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Package GitHub Pages site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: rulab/dist
+
+  # Repository Settings > Pages must use GitHub Actions as its source.
+  # This workflow intentionally never overwrites a legacy gh-pages branch.
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy verified site
+        id: deployment
+        uses: actions/deploy-pages@v4
