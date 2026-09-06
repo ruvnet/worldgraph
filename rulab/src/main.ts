@@ -46,6 +46,7 @@ function setCapturePreview(value:boolean){document.querySelector('.workspace')!.
 function selectEntity(id: string) { selected=id; renderUI(); }
 function actionButton(text: string, fn: () => void) { const b=document.createElement('button'); b.className='entity-action'; b.textContent=text; b.onclick=()=>{try{fn();}catch(error){notify(error instanceof Error?error.message:'Action could not be recorded.');}}; return b; }
 function renderUI() {
+  syncScenarioUI();
   const frame=timeline.getFrame();
   $('time').textContent=formatTime(frame.time); ($<HTMLInputElement>('timeline')).value=String(frame.time);
   $('timeline').style.setProperty('--progress',`${frame.time/120*100}%`);
@@ -73,7 +74,7 @@ function renderUI() {
   for(const e of frame.entities) { const circle=document.createElementNS(svgNS,'circle');circle.setAttribute('cx',String(130+e.position[0]*8));circle.setAttribute('cy',String(70-e.position[1]*3));circle.setAttribute('r',e.id===selected?'5':'3');circle.setAttribute('fill',e.kind==='drone'?'#e8b581':e.kind==='sensor'?'#8bbbd8':'#c7dbbe');group.append(circle); }
 }
 const descriptions:Record<ScenarioId,[string,string,string]>={robotics:['RULAB / ROBOTICS','Tomorrow,<br><em>in motion.</em>','Explore the lab. Follow an experiment. <br>See every moment from a new perspective.'],hospitality:['RULAB / HOSPITALITY','Spaces that<br><em>understand.</em>','Explore service robotics and modular rooms. <br>Replay an experiment on your own terms.'],healthcare:['RULAB / HEALTHCARE','Designed<br><em>around care.</em>','Explore an authored care environment. <br>Follow assistance robots through space and time.']};
-document.querySelectorAll<HTMLButtonElement>('[data-scenario]').forEach(b=>b.onclick=()=>{ const id=b.dataset.scenario as ScenarioId;timeline.setScenario(id);setPlaying(false);selected='robot-1';lastSync=-1;const d=descriptions[id];$('scene-kicker').textContent=d[0];$('scene-title').innerHTML=d[1];$('scene-description').innerHTML=d[2];$<HTMLImageElement>('reference').src=`${base}references/${id}.jpeg`;document.querySelectorAll<HTMLElement>('[data-scenario]').forEach(c=>{c.classList.toggle('active',c===b);c.setAttribute('aria-pressed',String(c===b));});view?.reset();setCapturePreview(false);renderUI();});
+document.querySelectorAll<HTMLButtonElement>('[data-scenario]').forEach(b=>b.onclick=()=>{timeline.setScenario(b.dataset.scenario as ScenarioId);setPlaying(false);selected='robot-1';lastSync=-1;view?.reset();setCapturePreview(false);renderUI();});
 document.querySelectorAll<HTMLButtonElement>('[data-mode]').forEach(b=>b.onclick=()=>{view?.setMode(b.dataset.mode as ViewMode);document.querySelectorAll<HTMLElement>('[data-mode]').forEach(c=>c.setAttribute('aria-pressed',String(c===b)));});
 document.querySelectorAll<HTMLButtonElement>('[data-shot]').forEach(b=>b.onclick=()=>{view?.cameraPreset(b.dataset.shot as 'overview'|'robot'|'drone'|'rf');document.querySelectorAll<HTMLElement>('[data-shot]').forEach(c=>c.classList.toggle('active',c===b));if(b.dataset.shot==='rf')selectEntity('rf-door');else if(b.dataset.shot==='robot')selectEntity('robot-1');else if(b.dataset.shot==='drone')selectEntity('drone-1');});
 $('play').onclick=()=>{if(timeline.getFrame().time>=120)timeline.seek(0);setPlaying(!playing);};

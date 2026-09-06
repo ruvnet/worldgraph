@@ -31,15 +31,18 @@ test('renders real Gaussians with independent navigation and a stable WASM graph
 });
 
 test('replays edits, preserves branches and round trips experiment files',async({page})=>{
+  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   await ready(page);await seek(page,12);await inspector(page);await page.getByRole('button',{name:'Pause this agent',exact:true}).click();
   await expect(page.getByRole('button',{name:'Resume this agent'})).toBeVisible();
   await seek(page,0);await expect(page.getByRole('button',{name:'Pause this agent',exact:true})).toBeVisible();
   await seek(page,20);await expect(page.getByRole('button',{name:'Resume this agent'})).toBeVisible();
   await page.getByRole('button',{name:'RF chamber door CLOSED'}).click();await page.getByRole('button',{name:'Open RF door',exact:true}).click();await expect(page.getByRole('button',{name:'Close RF door',exact:true})).toBeVisible();
-  const wait=page.waitForEvent('download');await page.getByRole('button',{name:'Export experiment',exact:true}).click();const file=await wait;const payload=await readFile((await file.path())!);const saved=JSON.parse(payload.toString());expect(saved).toBeTruthy();
+  await seek(page,20);const originalGraph=await graphJson(page);
+  const wait=page.waitForEvent('download');await page.getByRole('button',{name:'Export experiment',exact:true}).click();const file=await wait;const payload=await readFile((await file.path())!);const saved=JSON.parse(payload.toString());expect(saved.scenario).toBe('robotics');expect(saved.time).toBe(20);
   if(await page.getByRole('button',{name:'Toggle world inspector'}).getAttribute('aria-expanded')==='true')await page.getByRole('button',{name:'Toggle world inspector'}).click();await page.getByRole('button',{name:'02 Hospitality lab'}).click();await expect(page.locator('#scene-kicker')).toContainText('HOSPITALITY');
-  await page.locator('#experiment-file').setInputFiles({name:'replay.json',mimeType:'application/json',buffer:payload});await expect(page.locator('#toast')).toContainText('Experiment restored');await expect(page.locator('#scene-kicker')).toContainText('ROBOTICS');await expect(page.locator('#time')).toHaveText('00:20.0');
-  await page.locator('#experiment-file').setInputFiles({name:'invalid.json',mimeType:'application/json',buffer:Buffer.from('{"__proto__":{"polluted":true}}')});await expect(page.locator('#toast')).not.toContainText('Experiment restored');await expect(page.locator('#time')).toHaveText('00:20.0');
+  await page.locator('#experiment-file').setInputFiles({name:'replay.json',mimeType:'application/json',buffer:payload});await expect(page.locator('#toast')).toContainText('Experiment restored');await expect(page.locator('#scene-kicker')).toContainText('ROBOTICS');await expect(page.locator('#time')).toHaveText('00:20.0');await expect(page.getByRole('button',{name:'01 Robotics lab'})).toHaveAttribute('aria-pressed','true');
+  await seek(page,21);await seek(page,20);expect(await graphJson(page)).toBe(originalGraph);
+  await page.locator('#experiment-file').setInputFiles({name:'invalid.json',mimeType:'application/json',buffer:Buffer.from('{"__proto__":{"polluted":true}}')});await expect(page.locator('#toast')).not.toContainText('Experiment restored');await expect(page.locator('#time')).toHaveText('00:20.0');expect(errors).toEqual([]);
 });
 
 test('imports bounded splats transactionally and restores the authored world',async({page})=>{
