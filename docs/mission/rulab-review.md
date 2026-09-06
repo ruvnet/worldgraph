@@ -81,3 +81,9 @@ Base commit: `360ef48a2536d45033cdbe0c40c0f522b8f75ae7`. Working tree contains u
 | `.github/workflows/rulab.yml` | `44a9581010e5ae5a6625f7e58941d3bfee6060fc6474a7ff7956d8d20eddfa72` |
 | `package-lock.json` | `84c22a662311e03ae5639f6acbae293b2752b13b1dafd292e5dfa1a496c93831` |
 | `rulab/package-lock.json` | `7adf929fd211bf5332b3150cb1aed6f71e0c6dc0113adab0f483ca7b6daa2858` |
+
+## Follow-up correctness review
+
+Desktop and mobile browser validation exposed a persistent scenario heading race: switching to hospitality wrote the heading directly without updating the cached scenario. Restoring robotics before the next animation frame then caused every subsequent synchronization to return early. Commit `ba7676c` routes scenario switches and imports through the same synchronous display update. The regression path also compares the restored Rust graph byte for byte and checks browser exceptions.
+
+A separate read-only review reproduced a stale explicit snapshot using the actual compiled Rust WASM: after recording an edit, the timeline revision was 1 while an export before the next scheduled graph update still contained revision 0. The export handler now synchronizes the current frame before downloading. The browser suite seeks and exports in the same browser task, then compares that snapshot with the state after normal rendering resumes. Final CI artifacts determine acceptance; these findings do not replace the complete browser gate.
