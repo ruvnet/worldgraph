@@ -85,8 +85,33 @@ Primary sources were checked September 6, 2026. The entries below solve differen
 | Spark 2 streaming and deformation | Official documentation describes hierarchical detail, RAD streaming, covariance splats, and experimental skinning. [Documentation](https://sparkjs.dev/docs/new-features-2.0/) | Researched. This application does not implement streaming captures, general skinning, or local RAD import |
 | Atlas | World Labs describes a pretrained multimodal model with camera conditioned generation, spatial reconstruction, explicit 3D outputs, and temporal reframing. The announcement offers early access. [Announcement](https://www.worldlabs.ai/blog/atlas) | Researched capability reference. No Atlas model, API integration, training, or inference is included |
 | 4D Gaussian Splatting | The CVPR 2024 method learns time dependent Gaussian deformation using neural voxels and an MLP. [Paper](https://arxiv.org/abs/2310.08528) | Researched dynamic reconstruction baseline. The current analytical motion is not an implementation of learned 4DGS |
+| NVIDIA BTimer | NVIDIA SIL's current reconstruction catalog links BTimer, a NeurIPS 2025 method that predicts an explicit 3D Gaussian scene at a requested timestamp from monocular video and camera/time conditioning. Code and checkpoints are not linked on its project page as checked. [Project](https://research.nvidia.com/labs/toronto-ai/bullet-timer/), [Paper](https://arxiv.org/abs/2412.03526) | Researched capture reconstruction candidate. Reconstructing a recorded instant differs from forecasting future motion; RuLab currently has neither a BTimer adapter nor a temporal Gaussian asset player |
+| NVIDIA Cosmos 3 | The Nano model card dates its release to May 31, 2026. Cosmos 3 uses a Mixture of Transformers architecture; official checkpoints and runnable inference examples are available. The repository describes separate reasoning and generation surfaces, while some post training recipes remain marked Coming Soon. [Model card](https://huggingface.co/nvidia/Cosmos3-Nano), [Repository](https://github.com/NVIDIA/Cosmos) | Researched for video/action prediction and experiment variations on a separate GPU service. Its documented outputs are media, actions, and text, not a directly importable temporally registered Gaussian scene. No Cosmos runtime or model weights are included |
 
-The strongest next experiment is to replace one authored bay with a calibrated capture while keeping identities and the replay protocol unchanged. Measure held out camera reconstruction error, object registration error, revisit consistency, memory use, and frame timing on named physical devices. Introduce a physics engine before claiming physical interaction fidelity, and a trained dynamics component before claiming predictive world modeling. A source model's published GPU benchmark must not be transferred to this browser implementation.
+The [Predict2.5 repository](https://github.com/nvidia-cosmos/cosmos-predict2.5) retains concrete robot/action distillation and policy recipes dated February 23, 2026, but now states that active development has moved to Cosmos 3. Preserve a pinned Predict2.5 revision only as a historical comparison. This recommendation follows the current repository state rather than treating an older generation as the forward default.
+
+### Proposed capture to WorldGraph experiment
+
+This extension is **not implemented**. Begin with one bay and a 60 second, 30 FPS recording from three synchronized cameras, producing 5,400 source frames. Use one entire camera as a novel view holdout, and record surveyed reference points and robot telemetry when available. A monocular method may consume one input stream; additional cameras provide independent evaluation. Check model/checkpoint availability, license, hardware requirements, and source revisions before selecting an inference backend.
+
+1. Create a capture manifest containing content hashes, camera calibration, clock offsets, ENU registration, privacy decisions, and source timestamps. Retain observed frames independently of reconstructed or generated assets.
+2. Reconstruct the static shell and dynamic subjects on a separate GPU worker. Export a static Gaussian asset plus time indexed appearance chunks and object transforms. BTimer outputs at different timestamps require an explicit association and registration step before they can share persistent graph identities. Static PLY import alone does not implement temporal replay.
+3. Introduce a versioned capture adapter and temporal asset manifest. The current adapter accepts authored frames only; extending it must preserve observed, reconstructed, and predicted provenance instead of relabelling inputs as authored. Reference large appearance blobs by content hash, and send object/event changes to WorldGraph rather than storing Gaussian buffers as graph nodes.
+4. Add a temporal asset player and independent media cache to Spark. Keep the camera, experiment clock, and asynchronous reconstruction job state separate. A failed chunk must leave the last accepted scene and its timestamp visible.
+5. Evaluate a future prediction service separately. Give it only the observation prefix and candidate actions. Compare predicted object trajectories with later telemetry; generated video must not establish observed occupancy, free space, or permission to operate equipment.
+
+The following are provisional acceptance targets for that experiment, not reported results or universal device guarantees:
+
+| Dimension | Proposed acceptance measure |
+| --- | --- |
+| Registration | ENU position RMSE at most 5 cm on at least eight independent surveyed check points; report rotational and scale error separately |
+| Synchronization | Residual clock error at most 5 ms, with drift measured across the complete clip |
+| Reconstruction | On the held out camera, improve dynamic region LPIPS by at least 10% over a static 3DGS baseline without degrading static region PSNR by more than 0.5 dB; disclose masks and unsupported views |
+| Temporal identity | Zero identity swaps for the selected robot, AMR, and door; export/import must preserve exact recorded transforms and event ordering |
+| Browser delivery | At most 33.3 ms p95 frame time during a two minute replay on a named physical mobile device; record resolution, asset count, OS/browser, process memory, and thermal conditions |
+| Optional prediction | At 1, 2, and 4 second horizons, report average/final displacement error against telemetry and constant velocity baselines; require at least 20% lower average displacement error before claiming a useful predictive improvement |
+
+Introduce a physics engine before claiming physical interaction fidelity. One bay is a feasibility experiment; generalization requires additional held out spaces and tasks. A source model's published GPU benchmark must not be transferred to this browser implementation.
 
 ## Consequences and acceptance
 

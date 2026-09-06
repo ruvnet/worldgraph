@@ -21,3 +21,9 @@ Independent review identified local RAD expansion, PLY parser disagreement, cont
 ## Validation update
 
 37 local RuLab tests passed, including actual Rust WASM integration. TypeScript and production build passed. Dependency audit reported zero vulnerabilities. The cloud browser exercised the explicit WebGL2 unavailable fallback. Actual WebGL2 execution and desktop/mobile screenshots are required from the GitHub CI workflow before delivery is marked complete.
+
+## First CI rendering evidence
+
+The first RuLab CI run passed six of eight browser tests. It executed real WebGL2 through ANGLE/SwiftShader on desktop and mobile viewports. Gaussian rendering, independent camera presets, byte identical graph replay, bounded local capture import and context loss recovery executed successfully. Two mobile tests failed because responsive text removed numeric button prefixes from accessible names. Explicit accessible names were added and the inspector interaction was corrected.
+
+The existing repository CI passed all five jobs on cb110514733ebf5348fdbea363f777de39b80a0c, including 88 Rust tests, Clippy, both container builds and the authenticated live stream browser test. Final RuLab acceptance remains pending the corrected head.

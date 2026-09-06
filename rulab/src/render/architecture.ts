@@ -10,15 +10,15 @@ export function makeArchitecture(): Architecture {
   const ownedTextures: T.Texture[]=[];
   const concreteTex=surfaceTexture('concrete'); ownedTextures.push(concreteTex);
   const woodTex=surfaceTexture('wood'); ownedTextures.push(woodTex);
-  const concrete = new T.MeshStandardMaterial({color:0x8d8981,roughness:.3,metalness:.16,map:concreteTex,bumpMap:concreteTex,bumpScale:.022});
-  const wood = new T.MeshStandardMaterial({color:0xc8a06a,roughness:.65,map:woodTex});
+  const concrete = new T.MeshPhysicalMaterial({color:0x8b8278,roughness:.27,metalness:.12,clearcoat:.45,clearcoatRoughness:.18,map:concreteTex,roughnessMap:concreteTex,bumpMap:concreteTex,bumpScale:.018});
+  const wood = new T.MeshStandardMaterial({color:0xa37443,roughness:.58,map:woodTex,bumpMap:woodTex,bumpScale:.016});
   const dark = new T.MeshStandardMaterial({color:0x22282b,roughness:.44,metalness:.65});
   const white = new T.MeshStandardMaterial({color:0xc7c6bc,roughness:.63});
   const steel = new T.MeshStandardMaterial({color:0xa0a19c,roughness:.28,metalness:.85});
   const light = new T.MeshBasicMaterial({color:0xffd198});
   const black = new T.MeshStandardMaterial({color:0x111719,roughness:.88});
   const glass = new T.MeshPhysicalMaterial({color:0xcedee2,transparent:true,opacity:.13,roughness:.08,metalness:.08,depthWrite:false});
-  const green = new T.MeshStandardMaterial({color:0x455c2c,roughness:.95});
+  const green = new T.MeshStandardMaterial({color:0x344721,roughness:.88});
   const yellow = new T.MeshStandardMaterial({color:0xe0b855,roughness:.65});
   function put(geometry:T.BufferGeometry,material:T.Material,position:T.Vector3,rotation?:T.Euler){
     const matrix=new T.Matrix4().compose(position,new T.Quaternion().setFromEuler(rotation??new T.Euler()),new T.Vector3(1,1,1));
@@ -37,7 +37,7 @@ export function makeArchitecture(): Architecture {
   // Heavy mezzanine, continuous timber fins and offices along the left facade.
   box(4.8,.36,32,-9.45,4.25,0,dark);box(4.8,.25,32,-9.45,8.65,0,dark);
   box(.18,8.6,32,-11.6,4.3,0,wood);
-  for(let z=-15.8;z<=16;z+=.27)box(.16,8.2,.1,-7.3,4.25,z,wood);
+  for(let z=-15.8;z<=16;z+=.2)if([-13,-5,3,11].some(center=>Math.abs(z-center)<.66))box(.16,8.2,.09,-7.3,4.25,z,wood);
   // Large openings in front of the timber grid make the mezzanine legible.
   for(const z of [-11,-3,5,13]){
     box(.18,3.45,6.8,-7.13,2.1,z,glass);box(.18,3.35,6.8,-7.13,6.4,z,glass);
@@ -73,10 +73,14 @@ export function makeArchitecture(): Architecture {
     box(.46,.05,.17,x-.5,1.14,z+.17,black);
   }
   for(const z of [-12,10])for(const x of [-5.8,5.9]){
-    box(.8,.7,.8,x,.35,z,concrete);
-    bar(new T.Vector3(x,.6,z),new T.Vector3(x,2.35,z),.045,wood);
-    for(let i=0;i<18;i++){const a=i*2.399,y=1.6+(i%5)*.2;const px=x+Math.cos(a)*.45,pz=z+Math.sin(a)*.45;
-      const g=new T.SphereGeometry(.32,7,5);g.scale(1,.5,1);put(g,green,new T.Vector3(px,y,pz));}
+    put(new T.CylinderGeometry(.39,.34,.7,24),concrete,new T.Vector3(x,.35,z));
+    bar(new T.Vector3(x,.6,z),new T.Vector3(x,2.35,z),.024,wood);
+    for(let i=0;i<9;i++){const a=i*2.399,y=1.35+i*.105,length=.3+(i%3)*.09;
+      const from=new T.Vector3(x,y,z),tip=new T.Vector3(x+Math.cos(a)*length,y+.27,z+Math.sin(a)*length);
+      bar(from,tip,.008,wood);
+      for(let j=1;j<=7;j++){const t=j/8,leaf=from.clone().lerp(tip,t),side=j%2?1:-1;leaf.x+=Math.cos(a+Math.PI/2)*.05*side;leaf.z+=Math.sin(a+Math.PI/2)*.05*side;
+        const g=new T.SphereGeometry(.045,5,3);g.scale(1,.12,2.55);put(g,green,leaf,new T.Euler(.25,a+.65*side,-.3*side));}}
+
   }
   // Lounge in the near left foreground.
   box(2.1,.4,1,-4.7,.45,12,white);box(2.1,.8,.22,-4.7,.8,12.47,white);
@@ -117,11 +121,25 @@ export function makeArchitecture(): Architecture {
 }
 
 function surfaceTexture(kind:'wood'|'concrete'):T.CanvasTexture{
-  const canvas=document.createElement('canvas');canvas.width=256;canvas.height=256;const ctx=canvas.getContext('2d')!;
-  const im=ctx.createImageData(256,256);let seed=7128;
-  for(let y=0;y<256;y++)for(let x=0;x<256;x++){seed=(Math.imul(seed,1664525)+1013904223)>>>0;const n=seed/4294967296;
-    const v=kind==='wood'?185+17*Math.sin(x*.27+Math.sin(y*.014)*2)+n*15:195+n*30;const i=(y*256+x)*4;im.data[i]=v;im.data[i+1]=v;im.data[i+2]=v;im.data[i+3]=255;}
-  ctx.putImageData(im,0,0);const tex=new T.CanvasTexture(canvas);tex.wrapS=tex.wrapT=T.RepeatWrapping;tex.repeat.set(kind==='wood'?2:12,kind==='wood'?1:16);tex.colorSpace=T.SRGBColorSpace;return tex;
+  const canvas=document.createElement('canvas');canvas.width=512;canvas.height=512;const ctx=canvas.getContext('2d')!;
+  const im=ctx.createImageData(512,512);let seed=7128;
+  for(let y=0;y<512;y++)for(let x=0;x<512;x++){seed=(Math.imul(seed,1664525)+1013904223)>>>0;const n=seed/4294967296;
+    let v:number;
+    if(kind==='wood'){
+      const warp=Math.sin(y*.007)*3.4+Math.sin(y*.023+x*.012)*.6;
+      const grain=Math.sin(x*.74+warp)*7+Math.sin(x*2.2+warp*.4)*2.5;
+      const growth=Math.sin(x*.052+warp*.11)*10;
+      const pore=Math.pow(Math.max(0,Math.sin(x*1.81+warp*.7)),14)*9;
+      v=189+grain+growth-pore+n*5;
+    }else{
+      const mottling=Math.sin(x*.019+Math.sin(y*.012)*2)*8+Math.sin(y*.027+x*.009)*5;
+      const aggregate=Math.sin(x*.48+y*.17)*Math.sin(y*.39-x*.13)*2.5;
+      const seam=(x<2||y<2)?-14:0;
+      v=195+mottling+aggregate+(n-.5)*7+seam;
+    }
+    const i=(y*512+x)*4;im.data[i]=v;im.data[i+1]=v;im.data[i+2]=v;im.data[i+3]=255;
+  }
+  ctx.putImageData(im,0,0);const tex=new T.CanvasTexture(canvas);tex.wrapS=tex.wrapT=T.RepeatWrapping;tex.repeat.set(kind==='wood'?1:6,kind==='wood'?1:8);tex.anisotropy=4;tex.colorSpace=T.SRGBColorSpace;return tex;
 }
 function makeSign(title:string,subtitle:string):T.CanvasTexture{const c=document.createElement('canvas');c.width=1024;c.height=256;const x=c.getContext('2d')!;x.fillStyle='#182022';x.fillRect(0,0,1024,256);x.fillStyle='#f2ede2';x.font='500 92px sans-serif';x.fillText(title,48,121);x.fillStyle='#c3b9a5';x.font='24px sans-serif';x.fillText(subtitle,52,190);const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;return t;}
 export function disposeGroup(root:T.Object3D){const geometries=new Set<T.BufferGeometry>(),materials=new Set<T.Material>();root.traverse(o=>{if(o instanceof T.Mesh||o instanceof T.Line){geometries.add(o.geometry);(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>materials.add(m));}});geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());}

@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { PassThrough, Readable } from 'node:stream';
+import { pathToFileURL } from 'node:url';
 import { createDispatcher, MAX_MESSAGE_BYTES, startMcp } from './mcp-server.js';
 import { callTool, GATES, InputError, missionPlan, PACKAGE_ROOT, PACKAGE_VERSION, validateEvidence, validationPlan, verifyRuLab } from './rulab-harness.js';
 
@@ -17,7 +19,7 @@ const commandOf = (g) => ({ executable: g.executable, args: [...g.args], cwd: g.
 function reportFixture() {
   return { schemaVersion: 1, scope: 'rulab-4d', generatedAt: '2026-09-06T20:00:00.000Z', source: { commit: 'a'.repeat(40), dirty: false, packageVersion: PACKAGE_VERSION, location: 'checkout' },
     gates: GATES.map((g) => ({ id: g.id, status: 'passed', command: commandOf(g), exitCode: 0, durationMs: 123, reason: '', log: { path: `.artifacts/rulab/${g.id}.log`, sha256: 'b'.repeat(64), bytes: 30, truncated: false } })),
-    artifacts: [{ path: 'rulab/dist/index.html', sha256: 'c'.repeat(64), bytes: 1000 }], summary: { passed: GATES.length, failed: 0, skipped: 0, complete: true } };
+    artifacts: ['index.html', 'assets/app.js', 'assets/app.css', 'wasm/worldgraph_wasm.js', 'wasm/worldgraph_wasm_bg.wasm'].map((path) => ({ path: `rulab/dist/${path}`, sha256: 'c'.repeat(64), bytes: 1000 })), summary: { passed: GATES.length, failed: 0, skipped: 0, complete: true } };
 }
 async function transport(chunks) {
   const output = new PassThrough(); let text = '';
@@ -162,5 +164,105 @@ test('report output refuses symlinked directories and replaces file symlinks wit
     await verifyRuLab(['--without-browser'], { cwd: directory, execute: async () => ({ exitCode: 1, durationMs: 0, reason: '', output: Buffer.from('failed'), truncated: false }) });
     assert.equal(readFileSync(join(outside, 'protected.json'), 'utf8'), '{"unchanged":true}');
     assert.equal(JSON.parse(readFileSync(join(directory, '.artifacts/rulab/evidence.json'), 'utf8')).summary.complete, false);
+  } finally { rmSync(directory, { recursive: true, force: true }); rmSync(outside, { recursive: true, force: true }); }
+});
+
+function checkoutFixture() {
+  const directory = mkdtempSync(join(tmpdir(), 'worldgraph-acceptance-'));
+  for (const path of ['worldgraph-wasm', 'rulab/dist/assets', 'rulab/dist/wasm']) mkdirSync(join(directory, path), { recursive: true });
+  writeFileSync(join(directory, '.gitignore'), '.artifacts/\nrulab/dist/\n');
+  writeFileSync(join(directory, 'Cargo.toml'), '[workspace]\n');
+  writeFileSync(join(directory, 'rulab/package.json'), '{}\n');
+  writeFileSync(join(directory, 'rulab/dist/index.html'), '<script type="module" src="/worldgraph/assets/app.js"></script><link rel="stylesheet" href="/worldgraph/assets/app.css">');
+  writeFileSync(join(directory, 'rulab/dist/assets/app.js'), 'console.log("RuLab fixture");\n');
+  writeFileSync(join(directory, 'rulab/dist/assets/app.css'), 'body { color: white; }\n');
+  writeFileSync(join(directory, 'rulab/dist/wasm/worldgraph_wasm.js'), 'export default async () => {};\n');
+  writeFileSync(join(directory, 'rulab/dist/wasm/worldgraph_wasm_bg.wasm'), Buffer.from([0, 97, 115, 109, 1, 0, 0, 0]));
+  for (const args of [['init', '--quiet'], ['add', '.gitignore', 'Cargo.toml', 'rulab/package.json'], ['-c', 'user.name=Harness Test', '-c', 'user.email=harness@example.invalid', 'commit', '--quiet', '-m', 'fixture']]) {
+    const result = spawnSync('git', args, { cwd: directory, encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+  }
+  return directory;
+}
+
+// Gate subprocesses are deliberately stubbed to isolate runner acceptance.
+// Git provenance, filesystem reads, hashes, CLI diagnostics and exit codes are real.
+function runAcceptanceFixture(directory) {
+  const module = pathToFileURL(join(PACKAGE_ROOT, 'bin/rulab-harness.js')).href;
+  const source = `import { verifyRuLab } from ${JSON.stringify(module)};
+process.exitCode = await verifyRuLab([], { cwd: process.argv[1], execute: async () => ({ exitCode: 0, durationMs: 1, reason: '', output: Buffer.from('fixture gate output'), truncated: false }) });`;
+  const result = spawnSync(process.execPath, ['--input-type=module', '-e', source, directory], { encoding: 'utf8', timeout: 10_000, env: { ...process.env, WORLDGRAPH_BASE_PATH: '/worldgraph/' } });
+  assert.equal(result.error, undefined);
+  return { ...result, diagnostic: JSON.parse(result.stdout.trim()), report: JSON.parse(readFileSync(join(directory, '.artifacts/rulab/evidence.json'), 'utf8')) };
+}
+
+test('runner rejects dirty and unknown Git provenance even when every gate passes', () => {
+  const directory = checkoutFixture();
+  try {
+    const clean = runAcceptanceFixture(directory);
+    assert.equal(clean.status, 0, clean.stderr);
+    assert.equal(clean.diagnostic.accepted, true);
+    assert.deepEqual(clean.diagnostic.issues, []);
+    assert.equal(clean.report.source.dirty, false);
+    assert.match(clean.report.source.commit, /^[a-f0-9]{40}$/);
+    writeFileSync(join(directory, 'Cargo.toml'), '[workspace]\n# changed after commit\n');
+    const dirty = runAcceptanceFixture(directory);
+    assert.equal(dirty.status, 1);
+    assert.equal(dirty.report.summary.complete, true);
+    assert.equal(dirty.report.summary.passed, GATES.length);
+    assert.equal(dirty.diagnostic.accepted, false);
+    assert.match(dirty.stderr, /acceptance rejected:[\s\S]*uncommitted changes/);
+    rmSync(join(directory, '.git'), { recursive: true, force: true });
+    const unknown = runAcceptanceFixture(directory);
+    assert.equal(unknown.status, 1);
+    assert.equal(unknown.report.summary.complete, true);
+    assert.equal(unknown.report.source.commit, 'unknown');
+    assert.ok(unknown.diagnostic.issues.includes('Source commit is unknown.'));
+  } finally { rmSync(directory, { recursive: true, force: true }); }
+});
+
+test('runner hashes shipped JS, CSS and WASM and rejects missing referenced artifacts', () => {
+  const directory = checkoutFixture();
+  try {
+    const complete = runAcceptanceFixture(directory);
+    assert.equal(complete.status, 0, complete.stderr);
+    assert.deepEqual(complete.report.artifacts.map((a) => a.path), ['rulab/dist/assets/app.css', 'rulab/dist/assets/app.js', 'rulab/dist/index.html', 'rulab/dist/wasm/worldgraph_wasm.js', 'rulab/dist/wasm/worldgraph_wasm_bg.wasm']);
+    for (const artifact of complete.report.artifacts) {
+      const bytes = readFileSync(join(directory, artifact.path));
+      assert.equal(artifact.bytes, bytes.length);
+      assert.equal(artifact.sha256, createHash('sha256').update(bytes).digest('hex'));
+    }
+    rmSync(join(directory, 'rulab/dist/wasm/worldgraph_wasm_bg.wasm'));
+    const missingWasm = runAcceptanceFixture(directory);
+    assert.equal(missingWasm.status, 1);
+    assert.equal(missingWasm.report.summary.complete, true);
+    assert.match(missingWasm.stderr, /Required static artifact missing: rulab\/dist\/wasm\/worldgraph_wasm_bg.wasm/);
+    writeFileSync(join(directory, 'rulab/dist/index.html'), '<script src="/worldgraph/assets/app.js"></script><script src="/worldgraph/assets/missing.js"></script><link href="/worldgraph/assets/app.css" rel="stylesheet">');
+    const missingReference = runAcceptanceFixture(directory);
+    assert.equal(missingReference.status, 1);
+    assert.ok(missingReference.diagnostic.issues.some((issue) => issue.includes('Artifact unavailable: rulab/dist/assets/missing.js')));
+  } finally { rmSync(directory, { recursive: true, force: true }); }
+});
+
+test('artifact collection is bounded and rejects symlink escapes without reading their contents', () => {
+  const directory = checkoutFixture(), outside = mkdtempSync(join(tmpdir(), 'worldgraph-asset-outside-'));
+  try {
+    const references = Array.from({ length: 17 }, (_, i) => {
+      writeFileSync(join(directory, `rulab/dist/assets/extra-${i}.js`), `export const id = ${i};\n`);
+      return `<script src="/worldgraph/assets/extra-${i}.js"></script>`;
+    }).join('');
+    writeFileSync(join(directory, 'rulab/dist/index.html'), references);
+    const excessive = runAcceptanceFixture(directory);
+    assert.equal(excessive.status, 1);
+    assert.ok(excessive.report.artifacts.length <= 16);
+    assert.ok(excessive.diagnostic.issues.some((issue) => issue.includes('exceeds 16 evidence artifacts')));
+    const outsidePath = join(outside, 'private.js'); writeFileSync(outsidePath, 'private contents must not be hashed');
+    rmSync(join(directory, 'rulab/dist/assets/app.js'));
+    symlinkSync(outsidePath, join(directory, 'rulab/dist/assets/app.js'));
+    writeFileSync(join(directory, 'rulab/dist/index.html'), '<script src="/worldgraph/assets/app.js"></script><link href="/worldgraph/assets/app.css" rel="stylesheet">');
+    const escaped = runAcceptanceFixture(directory);
+    assert.equal(escaped.status, 1);
+    assert.ok(escaped.diagnostic.issues.some((issue) => issue.includes('Artifact resolves outside')));
+    assert.ok(!escaped.report.artifacts.some((artifact) => artifact.path === 'rulab/dist/assets/app.js'));
   } finally { rmSync(directory, { recursive: true, force: true }); rmSync(outside, { recursive: true, force: true }); }
 });

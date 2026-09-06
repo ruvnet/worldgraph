@@ -2,7 +2,7 @@
 // Bounded mission planning and a fixed-command validation runner. No shell input.
 import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -10,6 +10,9 @@ export const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..
 export const PACKAGE_VERSION = JSON.parse(readFileSync(join(PACKAGE_ROOT, 'package.json'), 'utf8')).version;
 export const MAX_REPORT_BYTES = 48 * 1024;
 const MAX_LOG_BYTES = 4 * 1024 * 1024;
+const MAX_ARTIFACTS = 16;
+const MAX_ARTIFACT_BYTES = 64 * 1024 * 1024;
+const REQUIRED_ARTIFACTS = ['rulab/dist/index.html', 'rulab/dist/wasm/worldgraph_wasm.js', 'rulab/dist/wasm/worldgraph_wasm_bg.wasm'];
 export const GATES = Object.freeze([
   { id: 'harness-tests', cwd: '.', executable: 'node', args: ['--test', 'bin/harness.test.js'] },
   { id: 'rust-tests', cwd: '.', executable: 'cargo', args: ['test', '--workspace', '--all-features', '--locked'] },
@@ -65,7 +68,7 @@ export function validateEvidence(input) {
   requireInput(exactKeys(report.source, ['commit', 'dirty', 'packageVersion', 'location']), 'Invalid source provenance.');
   requireInput(/^(?:[a-f0-9]{40}|unknown)$/.test(report.source.commit) && typeof report.source.dirty === 'boolean' && bounded(report.source.packageVersion, 64) && ['checkout', 'installed-package'].includes(report.source.location), 'Invalid source metadata.');
   requireInput(Array.isArray(report.gates) && report.gates.length <= GATES.length, 'Too many gates.');
-  requireInput(Array.isArray(report.artifacts) && report.artifacts.length <= 16, 'Too many artifacts.');
+  requireInput(Array.isArray(report.artifacts) && report.artifacts.length <= MAX_ARTIFACTS, 'Too many artifacts.');
   requireInput(exactKeys(report.summary, ['passed', 'failed', 'skipped', 'complete']), 'Invalid summary.');
   const issues = [], seen = new Set();
   for (const gate of report.gates) {
@@ -83,11 +86,17 @@ export function validateEvidence(input) {
     requireInput(gate.status !== 'failed' || gate.exitCode !== 0, 'Failed gate cannot have exit 0.');
     if (gate.status !== 'passed') issues.push(`${gate.id}: ${gate.status}${gate.reason ? ` (${gate.reason})` : ''}`);
   }
-  for (const artifact of report.artifacts) requireInput(exactKeys(artifact, ['path', 'sha256', 'bytes']) && bounded(artifact.path, 512) && /^[a-f0-9]{64}$/.test(artifact.sha256) && Number.isSafeInteger(artifact.bytes) && artifact.bytes > 0, 'Invalid artifact metadata.');
+  const artifactPaths = new Set();
+  for (const artifact of report.artifacts) {
+    requireInput(exactKeys(artifact, ['path', 'sha256', 'bytes']) && bounded(artifact.path, 512) && /^[a-f0-9]{64}$/.test(artifact.sha256) && Number.isSafeInteger(artifact.bytes) && artifact.bytes > 0, 'Invalid artifact metadata.');
+    requireInput(!artifactPaths.has(artifact.path), 'Duplicate artifact path.');
+    artifactPaths.add(artifact.path);
+  }
   for (const gate of GATES) if (!seen.has(gate.id)) issues.push(`${gate.id}: missing`);
   if (report.source.commit === 'unknown') issues.push('Source commit is unknown.');
   if (report.source.dirty) issues.push('Source checkout has uncommitted changes.');
-  if (!report.artifacts.some((a) => a.path === 'rulab/dist/index.html')) issues.push('Static entrypoint artifact missing.');
+  for (const path of REQUIRED_ARTIFACTS) if (!artifactPaths.has(path)) issues.push(`Required static artifact missing: ${path}.`);
+  for (const extension of ['js', 'css']) if (![...artifactPaths].some((path) => new RegExp(`^rulab/dist/assets/[^/]+\\.${extension}$`).test(path))) issues.push(`Built ${extension.toUpperCase()} artifact missing.`);
   const counts = Object.fromEntries(['passed', 'failed', 'skipped'].map((state) => [state, report.gates.filter((g) => g.status === state).length]));
   const complete = GATES.every((g) => report.gates.some((r) => r.id === g.id && r.status === 'passed'));
   requireInput(['passed', 'failed', 'skipped'].every((key) => report.summary[key] === counts[key]) && report.summary.complete === complete, 'Summary disagrees with gate results.');
@@ -111,7 +120,7 @@ export const EVIDENCE_SCHEMA = objectSchema({
     exitCode: { anyOf: [{ type: 'null' }, { type: 'integer', minimum: 0, maximum: 255 }] },
     durationMs: { type: 'integer', minimum: 0, maximum: 86_400_000 }, reason: { type: 'string', maxLength: 2000 }, log: { anyOf: [{ type: 'null' }, logSchema] },
   }) },
-  artifacts: { type: 'array', maxItems: 16, items: artifactSchema },
+  artifacts: { type: 'array', maxItems: MAX_ARTIFACTS, items: artifactSchema },
   summary: objectSchema({ passed: { type: 'integer', minimum: 0, maximum: GATES.length }, failed: { type: 'integer', minimum: 0, maximum: GATES.length }, skipped: { type: 'integer', minimum: 0, maximum: GATES.length }, complete: { type: 'boolean' } }),
 }, { description: 'schemaVersion 1 report from worldgraphs rulab verify. Maximum serialized size 48 KiB. Hashes and exit codes are caller-reported, not independently verified.' });
 
@@ -161,6 +170,47 @@ function writeArtifact(path, bytes) {
   renameSync(temporary, path);
 }
 
+// Inspect only the small entrypoint and its direct local code/style references,
+// plus the known dynamically loaded WASM pair. Never recursively walk dist.
+function collectArtifacts(root) {
+  const artifacts = [], issues = [], paths = new Set(REQUIRED_ARTIFACTS);
+  const dist = join(root, 'rulab/dist');
+  const readBounded = (path, limit) => {
+    const file = join(root, path), real = realpathSync(file), within = relative(dist, real);
+    requireInput(within && within !== '..' && !within.startsWith(`..${sep}`) && !isAbsolute(within), 'Artifact resolves outside the build directory.');
+    const stat = statSync(file);
+    requireInput(stat.isFile() && stat.size > 0 && stat.size <= limit, `Artifact must be a nonempty regular file of at most ${limit} bytes.`);
+    return readFileSync(file);
+  };
+  try {
+    const html = readBounded(REQUIRED_ARTIFACTS[0], 256 * 1024).toString('utf8');
+    const base = new URL(process.env.WORLDGRAPH_BASE_PATH || '/worldgraph/', 'https://worldgraph.invalid/');
+    requireInput(base.origin === 'https://worldgraph.invalid' && base.pathname.endsWith('/'), 'Build base must be a local directory.');
+    let tags = 0;
+    for (const match of html.matchAll(/<(?:script|link)\b[^>]*>/gi)) {
+      requireInput(++tags <= 64, 'Entrypoint exceeds 64 script/link tags.');
+      const reference = /\b(?:src|href)\s*=\s*(["'])(.*?)\1/i.exec(match[0])?.[2];
+      if (!reference) continue;
+      const url = new URL(reference, base);
+      if (!/\.(?:m?js|css|wasm)$/i.test(url.pathname)) continue;
+      requireInput(url.origin === base.origin && url.pathname.startsWith(base.pathname), 'Code/style reference is outside the local build base.');
+      const local = decodeURIComponent(url.pathname.slice(base.pathname.length));
+      requireInput(local && !local.includes('\\') && !local.split('/').some((part) => part === '..' || part === '.' || part === '') && !local.includes('\0'), 'Unsafe artifact reference.');
+      const path = `rulab/dist/${local}`;
+      requireInput(path.length <= 512, 'Artifact path exceeds 512 characters.');
+      requireInput(paths.has(path) || paths.size < MAX_ARTIFACTS, `Build exceeds ${MAX_ARTIFACTS} evidence artifacts.`);
+      paths.add(path);
+    }
+  } catch (error) { issues.push(`Entrypoint artifact inspection failed: ${error.message}`); }
+  for (const path of [...paths].sort()) {
+    try {
+      const content = readBounded(path, MAX_ARTIFACT_BYTES);
+      artifacts.push({ path, sha256: sha256(content), bytes: content.length });
+    } catch (error) { issues.push(`Artifact unavailable: ${path} (${error.message})`); }
+  }
+  return { artifacts, issues };
+}
+
 export async function verifyRuLab(argv, options = {}) {
   let includeBrowser = true, reportPath = '.artifacts/rulab/evidence.json';
   for (let i = 0; i < argv.length; i++) {
@@ -194,14 +244,15 @@ export async function verifyRuLab(argv, options = {}) {
     }
     report.gates.push(result);
   }
-  for (const artifactPath of ['rulab/dist/index.html']) {
-    const file = join(root, artifactPath);
-    if (existsSync(file)) { const content = readFileSync(file); report.artifacts.push({ path: artifactPath, sha256: sha256(content), bytes: content.length }); }
-  }
+  const collected = collectArtifacts(root);
+  report.artifacts = collected.artifacts;
   const counts = Object.fromEntries(['passed', 'failed', 'skipped'].map((state) => [state, report.gates.filter((g) => g.status === state).length]));
   report.summary = { ...counts, complete: report.gates.every((g) => g.status === 'passed') };
-  validateEvidence({ report });
+  const validation = validateEvidence({ report });
+  const issues = [...validation.issues, ...collected.issues];
+  const accepted = report.summary.complete && issues.length === 0;
   writeArtifact(target, `${JSON.stringify(report, null, 2)}\n`);
-  process.stdout.write(`${JSON.stringify({ report: targetRelative.split(sep).join('/'), ...report.summary })}\n`);
-  return report.summary.complete ? 0 : 1;
+  if (!accepted) process.stderr.write(`RuLab acceptance rejected:\n${issues.map((issue) => `- ${issue}`).join('\n')}\n`);
+  process.stdout.write(`${JSON.stringify({ report: targetRelative.split(sep).join('/'), ...report.summary, accepted, issues })}\n`);
+  return accepted ? 0 : 1;
 }

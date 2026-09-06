@@ -25,6 +25,7 @@ test('renders real Gaussians with independent navigation and a stable WASM graph
   await page.getByRole('button',{name:'Graph',exact:true}).click();
   await seek(page,36);const original=await graphJson(page);await seek(page,84);await seek(page,36);expect(await graphJson(page)).toBe(original);
   await page.screenshot({path:info.outputPath('rulab-graph.png'),fullPage:true});
+  await page.getByRole('button',{name:'About this world'}).click();const metricDownload=page.waitForEvent('download');await page.getByRole('button',{name:'Export rendering evidence'}).click();const metricFile=await metricDownload;const measured=await readFile((await metricFile.path())!);const evidence=JSON.parse(measured.toString());expect(evidence.backend).toBe('webgl2');expect(evidence.frameSamples).toBeGreaterThan(2);expect(evidence.p95FrameMs).toBeGreaterThan(0);await info.attach('software-webgl-render-evidence',{body:measured,contentType:'application/json'});await page.getByRole('button',{name:'Close information'}).click();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   expect(errors).toEqual([]);
 });

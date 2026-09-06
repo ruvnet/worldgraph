@@ -8,11 +8,11 @@ import { makeControls, type Position3 } from './controls';
 import { preflightSplat, MAX_IMPORT_SPLATS } from './imports';
 
 const PRESETS:Record<'overview'|'robot'|'drone'|'rf',{position:Position3;target:Position3}>={
-  overview:{position:[7,3,14],target:[0,2.2,-3]}, robot:{position:[3.7,2.8,3.1],target:[0,1.9,-2]},
+  overview:{position:[3.2,2.45,10],target:[0,2,-4]}, robot:{position:[3.7,2.8,3.1],target:[0,1.9,-2]},
   drone:{position:[4.8,5.7,5.4],target:[0,4.8,0]}, rf:{position:[3.8,2.3,1.9],target:[9,2,-3]},
 };
 function unavailable(options:ViewOptions,status:string):RuLabView{
-  options.onMetrics({backend:'unavailable',fps:0,frameMs:0,splatCount:0,drawCalls:0,camera:[7,-14,3],status});
+  options.onMetrics({backend:'unavailable',fps:0,frameMs:0,splatCount:0,drawCalls:0,camera:[3.2,-10,2.45],status});
   return {setFrame(){},setMode(){},setQuality(){},cameraPreset(){},move(){},reset(){},async loadSplat(){throw new Error('Gaussian rendering requires WebGL2. Try a browser with GPU access.');},dispose(){}};
 }
 /** Actual perspective geometry, anisotropic Gaussians, state-driven motion. */
@@ -33,12 +33,12 @@ export async function createRuLabView(options:ViewOptions):Promise<RuLabView>{
   const architecture=makeArchitecture();startupCleanup.push(()=>architecture.dispose());const entities=makeEntities();startupCleanup.push(()=>entities.dispose());scene.add(architecture.meshes,architecture.splats,entities.root);
   await architecture.splats.initialized;
   const atmosphere=makeAtmosphere();startupCleanup.push(()=>disposeGroup(atmosphere));scene.add(atmosphere);
-  scene.add(new T.HemisphereLight(0xdce8ee,0x7d6346,2.05));
-  const sun=new T.DirectionalLight(0xffe2b8,3.4);sun.position.set(-9,15,-20);sun.target.position.set(0,0,1);scene.add(sun,sun.target);sun.castShadow=true;
+  scene.add(new T.HemisphereLight(0xdce8ee,0x725133,1.15));
+  const sun=new T.DirectionalLight(0xffe2b8,2.4);sun.position.set(-9,15,-20);sun.target.position.set(0,0,1);scene.add(sun,sun.target);sun.castShadow=true;
   sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-22;sun.shadow.camera.right=22;sun.shadow.camera.top=24;sun.shadow.camera.bottom=-24;sun.shadow.camera.near=.1;sun.shadow.camera.far=65;sun.shadow.bias=-.00045;sun.shadow.normalBias=.055;
   for(const z of [-11,0,11]){const fill=new T.PointLight(0xffc888,55,20,2);fill.position.set(-4,5,z);scene.add(fill);}
   const rfLight=new T.PointLight(0xd3e2f2,26,8,2);rfLight.position.set(9.4,3.6,-3);scene.add(rfLight);
-  const environmentRoom=new RoomEnvironment();const pmrem=new T.PMREMGenerator(renderer);const environment=pmrem.fromScene(environmentRoom,.08);startupCleanup.push(()=>environment.dispose());scene.environment=environment.texture;scene.environmentIntensity=.48;environmentRoom.dispose();pmrem.dispose();if(startupShaderFailed)throw new Error('GPU environment shader initialization failed.');
+  const environmentRoom=new RoomEnvironment();const pmrem=new T.PMREMGenerator(renderer);const environment=pmrem.fromScene(environmentRoom,.08);startupCleanup.push(()=>environment.dispose());scene.environment=environment.texture;scene.environmentIntensity=.62;environmentRoom.dispose();pmrem.dispose();if(startupShaderFailed)throw new Error('GPU environment shader initialization failed.');
   const raycaster=new T.Raycaster();let disposed=false,failed=false,importGeneration=0,loading=false;
   let imported:SplatMesh|undefined,mode:ViewMode='cinematic',quality:Quality='auto',lastFrame:WorldFrame|undefined;
   let importName='';let ratio=Math.min(window.devicePixelRatio||1,1.5);let raf=0,lastTime=0,windowStart=0,frames=0,elapsedMs=0,lastAdjustment=0;let frameSamples:number[]=[];
