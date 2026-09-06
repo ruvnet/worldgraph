@@ -1,0 +1,25 @@
+{
+  "name": "worldgraph-wasm",
+  "type": "module",
+  "collaborators": [
+    "rUv <ruv@ruv.net>",
+    "WiFi-DensePose Contributors"
+  ],
+  "description": "ADR-200 — WebAssembly bridge exposing the WorldGraph digital twin to the SuperSplat (PlayCanvas/WebGPU) browser visualizer",
+  "version": "0.3.1",
+  "license": "MIT OR Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ruvnet/worldgraph"
+  },
+  "files": [
+    "worldgraph_wasm_bg.wasm",
+    "worldgraph_wasm.js",
+    "worldgraph_wasm.d.ts"
+  ],
+  "main": "worldgraph_wasm.js",
+  "types": "worldgraph_wasm.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

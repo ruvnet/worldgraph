@@ -1,0 +1,100 @@
+{
+  "schema": "worldgraph.rulab.release.v1",
+  "sourceCommit": "30bbe3ce01cdff7bbec48aa58acb47a2125dce35",
+  "testedMergeCommit": "84ad08f5f53dbc23524f55de1e9063d0b06155df",
+  "sourceTree": "930c9d2449ee42364bdcc2308666941d8f472eb9",
+  "validationRun": "https://github.com/ruvnet/worldgraph/actions/runs/34062839546",
+  "evidenceArtifactDigest": "sha256:6e1059465d9a0d52b046a91fb1a047c55e38d47a9c903f65f2be358d43e14ed9",
+  "pagesArtifactDigest": "sha256:b509bd366aa08379ce1d5393918e5af57d86d56c5f58accceee4471082716e61",
+  "publication": "Existing gh-pages branch; verified CI artifact with preserved legacy page",
+  "files": [
+    {
+      "path": "assets/index-BezdhbRu.js",
+      "bytes": 5543015,
+      "sha256": "5f4954799264e5147ee437d3658536cf763641e45d2420b53049d5787278210a",
+      "gitSha": "af2d3c4ff4b4abea675084fd155b0327bd044a42"
+    },
+    {
+      "path": "assets/index-C-cmVuGC.css",
+      "bytes": 20773,
+      "sha256": "4ee8da0d28410125e1e0d21fd34b3a75b76842e615cdfa5833ad550fa6ff7d18",
+      "gitSha": "da8747bb95573de085409d1b5d41c70d7d636509"
+    },
+    {
+      "path": "index.html",
+      "bytes": 588,
+      "sha256": "5bccebe5ce786ee5503980dbc4a4f5d175072b996e143729c4979549e3125e34",
+      "gitSha": "1d92baf14810f094636e4ee6a3285e6a8137ac7d"
+    },
+    {
+      "path": "references/README.md",
+      "bytes": 894,
+      "sha256": "cfaf075919872fc7d8de1bd70328e8e39709ce4560e7835be2e2c162667111ac",
+      "gitSha": "9c664af72a449ffc16a3cd0baa89e5253e3d0949"
+    },
+    {
+      "path": "references/healthcare.jpeg",
+      "bytes": 601020,
+      "sha256": "c64c5716267cde719aa2e222361e5b72c88890f4a2e41c6c448958e35108dd62",
+      "gitSha": "218b7c5cc76c72b99e405c91de349cc1436c8f3c"
+    },
+    {
+      "path": "references/hospitality.jpeg",
+      "bytes": 595318,
+      "sha256": "6077326e574c67dde9bf9b22d64fc1b19139360ee9ad7c589ca01f3ebe668cfe",
+      "gitSha": "4a60f9442e87a9b08d79414a4f3e39fc5ad06d25"
+    },
+    {
+      "path": "references/rf.jpeg",
+      "bytes": 540507,
+      "sha256": "a77ca5f06174130b5f2dfa8fbd5dafe0259e6f9f611e98c7e10b2df50cef084d",
+      "gitSha": "ee39a4f30f6554082c65ab527ba60585a7adba8c"
+    },
+    {
+      "path": "references/robotics.jpeg",
+      "bytes": 592252,
+      "sha256": "c65320054f17a2ea8a409bcc5837a96ef2861b07b344b8a76f4932c758a26f7b",
+      "gitSha": "568dc3a74180bd515567b5e07e7d09b11e25430c"
+    },
+    {
+      "path": "wasm/.gitignore",
+      "bytes": 1,
+      "sha256": "684888c0ebb17f374298b65ee2807526c066094c701bcc7ebbe1c1095f494fc1",
+      "gitSha": "f59ec20aabf5842d237244ece8c81ab184faeac1"
+    },
+    {
+      "path": "wasm/package.json",
+      "bytes": 641,
+      "sha256": "9612ed440c7340520ef90eea49ae6716b07f4dc003465ff569b6ed7b859a2498",
+      "gitSha": "4ba59f844d1db03a42c6510dec859bb9253e47e2"
+    },
+    {
+      "path": "wasm/worldgraph_wasm.d.ts",
+      "bytes": 5845,
+      "sha256": "85d3183d457206316eb7f55fec8d41ea0948d99675e5556acbbe56e2ec8d8c3e",
+      "gitSha": "5b16d97c478077632f04d3b7082a50d8bcd92e36"
+    },
+    {
+      "path": "wasm/worldgraph_wasm.js",
+      "bytes": 25229,
+      "sha256": "ea8b7ea8e22f767a93bbb367e351264a13f1aa1fce47cc3dd8650dccb09cda86",
+      "gitSha": "179424758c5c17417e4493161d5c6ff2c1cc311a"
+    },
+    {
+      "path": "wasm/worldgraph_wasm_bg.wasm",
+      "bytes": 942687,
+      "sha256": "f406429e313acb9159bd0d6bf0bb6812a703250c1159f8d370b4d1f3b540bcc8",
+      "gitSha": "caebbcc6a04bd54fc1d01fdb177f2107c234301d"
+    },
+    {
+      "path": "wasm/worldgraph_wasm_bg.wasm.d.ts",
+      "bytes": 2193,
+      "sha256": "d6072fd18546e7ad9814961081c4d37917aa703aeba3fb8e15fa6e5e5ca80db4",
+      "gitSha": "53490326fb447327ac5a4df85817b9807deab4b9"
+    }
+  ],
+  "limitations": [
+    "Authored geometry and deterministic kinematics; no learned reconstruction or prediction.",
+    "Browser CI uses software WebGL; physical GPU performance is unmeasured."
+  ]
+}
