@@ -1,100 +1,144 @@
 {
   "schema": "worldgraph.rulab.release.v1",
-  "sourceCommit": "30bbe3ce01cdff7bbec48aa58acb47a2125dce35",
-  "testedMergeCommit": "84ad08f5f53dbc23524f55de1e9063d0b06155df",
-  "sourceTree": "930c9d2449ee42364bdcc2308666941d8f472eb9",
-  "validationRun": "https://github.com/ruvnet/worldgraph/actions/runs/34062839546",
-  "evidenceArtifactDigest": "sha256:6e1059465d9a0d52b046a91fb1a047c55e38d47a9c903f65f2be358d43e14ed9",
-  "pagesArtifactDigest": "sha256:b509bd366aa08379ce1d5393918e5af57d86d56c5f58accceee4471082716e61",
-  "publication": "Existing gh-pages branch; verified CI artifact with preserved legacy page",
+  "sourceCommit": "9b1c79c836cdacfb7b44f058c593157bac4c1dab",
+  "testedMergeCommit": "d9d3560f3bf60e292cb20017fd7cf19422811d52",
+  "sourceTree": "1a9987a24e8ad115e0c54d3d0c3915f1eaf1061f",
+  "validationRun": "https://github.com/ruvnet/worldgraph/actions/runs/34066084944",
+  "evidenceArtifactDigest": "sha256:7406847321cdfacecea1eec3ea75ea9a663050b427ec2b0c06ba977035d57307",
+  "pagesArtifactDigest": "sha256:49b821a8a893922881470b03baf33eaef728dd138b25f7b9f44f23930253b2da",
+  "publication": "Existing gh-pages branch; exact verified CI artifacts with preserved legacy page",
+  "features": [
+    "Time-indexed Gaussian capture playback",
+    "Exact manifest export and per-frame SHA-256 verification",
+    "Native Rust capture provenance and requested/displayed timestamps",
+    "Four-frame synthetic Gaussian example"
+  ],
+  "validation": {
+    "gates": 7,
+    "browserCases": 12,
+    "unitTests": 106,
+    "harnessTests": 22,
+    "rustTests": 88
+  },
   "files": [
     {
-      "path": "assets/index-BezdhbRu.js",
-      "bytes": 5543015,
-      "sha256": "5f4954799264e5147ee437d3658536cf763641e45d2420b53049d5787278210a",
-      "gitSha": "af2d3c4ff4b4abea675084fd155b0327bd044a42"
+      "bytes": 22870,
+      "gitSha": "93f9fa0248641bdfca9c1cf745e637f94a72c747",
+      "path": "assets/index-DZ6IjJ1U.css",
+      "sha256": "e469dd997197370963637d3522637d19d3532dfae8ffe8f7aa02dc9093f7e6bd"
     },
     {
-      "path": "assets/index-C-cmVuGC.css",
-      "bytes": 20773,
-      "sha256": "4ee8da0d28410125e1e0d21fd34b3a75b76842e615cdfa5833ad550fa6ff7d18",
-      "gitSha": "da8747bb95573de085409d1b5d41c70d7d636509"
+      "bytes": 5569118,
+      "gitSha": "485adf33b1f7044e143e8ab050d6816a89586e47",
+      "path": "assets/index-Z7A8kbFH.js",
+      "sha256": "641dbf2f8f0eb3216289057d9f4eb1861b67137f4a8bbe9f183a36c03cbd0ee1"
     },
     {
-      "path": "index.html",
+      "bytes": 921,
+      "gitSha": "63832bc053da4fdc8bd0d02dc53e3eb0c036b734",
+      "path": "capture-example/capture.json",
+      "sha256": "9c567dcc4c58f2df520244557ea4416aa9da5a2271ced54fbcd9f38f647f6ba3"
+    },
+    {
+      "bytes": 91104,
+      "gitSha": "85520aa5ea5e92305119a0f72b4a809ebb7534fc",
+      "path": "capture-example/frame-000.splat",
+      "sha256": "ef2bafbb80eae5b3ca3378fe4b22f27295e892cadfbb6b1d02c9165b90e467fa"
+    },
+    {
+      "bytes": 91104,
+      "gitSha": "b995ac4c12c898a9d0c66ad24f0abc11b27b377c",
+      "path": "capture-example/frame-001.splat",
+      "sha256": "39a0a31392a0f1f69d70a3e51abc48b9585aedd941443006ec569e7df822e421"
+    },
+    {
+      "bytes": 91104,
+      "gitSha": "e4d6d3a8d83cc212f95e19891b857f7d4f3bad19",
+      "path": "capture-example/frame-002.splat",
+      "sha256": "a0571deb0cef98d640a52ac64984a393744791a8dd161b797289e6eba0c0ec3f"
+    },
+    {
+      "bytes": 91104,
+      "gitSha": "2ec1556087569c4c80c07a457f3a7af1df7a39fd",
+      "path": "capture-example/frame-003.splat",
+      "sha256": "670db080064712e6f6ada4ed9200b5e65a851f3d7e2de02d4ee5e6812d08c110"
+    },
+    {
       "bytes": 588,
-      "sha256": "5bccebe5ce786ee5503980dbc4a4f5d175072b996e143729c4979549e3125e34",
-      "gitSha": "1d92baf14810f094636e4ee6a3285e6a8137ac7d"
+      "gitSha": "f4a720ac4be3edaa33aec063b73441b6961e9464",
+      "path": "index.html",
+      "sha256": "8a9eca07a3886a1c44940a8c74fd6f7780c517d4ef3872ec872f05e1bda0fe96"
     },
     {
-      "path": "references/README.md",
       "bytes": 894,
-      "sha256": "cfaf075919872fc7d8de1bd70328e8e39709ce4560e7835be2e2c162667111ac",
-      "gitSha": "9c664af72a449ffc16a3cd0baa89e5253e3d0949"
+      "gitSha": "9c664af72a449ffc16a3cd0baa89e5253e3d0949",
+      "path": "references/README.md",
+      "sha256": "cfaf075919872fc7d8de1bd70328e8e39709ce4560e7835be2e2c162667111ac"
     },
     {
-      "path": "references/healthcare.jpeg",
       "bytes": 601020,
-      "sha256": "c64c5716267cde719aa2e222361e5b72c88890f4a2e41c6c448958e35108dd62",
-      "gitSha": "218b7c5cc76c72b99e405c91de349cc1436c8f3c"
+      "gitSha": "218b7c5cc76c72b99e405c91de349cc1436c8f3c",
+      "path": "references/healthcare.jpeg",
+      "sha256": "c64c5716267cde719aa2e222361e5b72c88890f4a2e41c6c448958e35108dd62"
     },
     {
-      "path": "references/hospitality.jpeg",
       "bytes": 595318,
-      "sha256": "6077326e574c67dde9bf9b22d64fc1b19139360ee9ad7c589ca01f3ebe668cfe",
-      "gitSha": "4a60f9442e87a9b08d79414a4f3e39fc5ad06d25"
+      "gitSha": "4a60f9442e87a9b08d79414a4f3e39fc5ad06d25",
+      "path": "references/hospitality.jpeg",
+      "sha256": "6077326e574c67dde9bf9b22d64fc1b19139360ee9ad7c589ca01f3ebe668cfe"
     },
     {
-      "path": "references/rf.jpeg",
       "bytes": 540507,
-      "sha256": "a77ca5f06174130b5f2dfa8fbd5dafe0259e6f9f611e98c7e10b2df50cef084d",
-      "gitSha": "ee39a4f30f6554082c65ab527ba60585a7adba8c"
+      "gitSha": "ee39a4f30f6554082c65ab527ba60585a7adba8c",
+      "path": "references/rf.jpeg",
+      "sha256": "a77ca5f06174130b5f2dfa8fbd5dafe0259e6f9f611e98c7e10b2df50cef084d"
     },
     {
-      "path": "references/robotics.jpeg",
       "bytes": 592252,
-      "sha256": "c65320054f17a2ea8a409bcc5837a96ef2861b07b344b8a76f4932c758a26f7b",
-      "gitSha": "568dc3a74180bd515567b5e07e7d09b11e25430c"
+      "gitSha": "568dc3a74180bd515567b5e07e7d09b11e25430c",
+      "path": "references/robotics.jpeg",
+      "sha256": "c65320054f17a2ea8a409bcc5837a96ef2861b07b344b8a76f4932c758a26f7b"
     },
     {
-      "path": "wasm/.gitignore",
       "bytes": 1,
-      "sha256": "684888c0ebb17f374298b65ee2807526c066094c701bcc7ebbe1c1095f494fc1",
-      "gitSha": "f59ec20aabf5842d237244ece8c81ab184faeac1"
+      "gitSha": "f59ec20aabf5842d237244ece8c81ab184faeac1",
+      "path": "wasm/.gitignore",
+      "sha256": "684888c0ebb17f374298b65ee2807526c066094c701bcc7ebbe1c1095f494fc1"
     },
     {
-      "path": "wasm/package.json",
       "bytes": 641,
-      "sha256": "9612ed440c7340520ef90eea49ae6716b07f4dc003465ff569b6ed7b859a2498",
-      "gitSha": "4ba59f844d1db03a42c6510dec859bb9253e47e2"
+      "gitSha": "4ba59f844d1db03a42c6510dec859bb9253e47e2",
+      "path": "wasm/package.json",
+      "sha256": "9612ed440c7340520ef90eea49ae6716b07f4dc003465ff569b6ed7b859a2498"
     },
     {
-      "path": "wasm/worldgraph_wasm.d.ts",
       "bytes": 5845,
-      "sha256": "85d3183d457206316eb7f55fec8d41ea0948d99675e5556acbbe56e2ec8d8c3e",
-      "gitSha": "5b16d97c478077632f04d3b7082a50d8bcd92e36"
+      "gitSha": "5b16d97c478077632f04d3b7082a50d8bcd92e36",
+      "path": "wasm/worldgraph_wasm.d.ts",
+      "sha256": "85d3183d457206316eb7f55fec8d41ea0948d99675e5556acbbe56e2ec8d8c3e"
     },
     {
-      "path": "wasm/worldgraph_wasm.js",
       "bytes": 25229,
-      "sha256": "ea8b7ea8e22f767a93bbb367e351264a13f1aa1fce47cc3dd8650dccb09cda86",
-      "gitSha": "179424758c5c17417e4493161d5c6ff2c1cc311a"
+      "gitSha": "179424758c5c17417e4493161d5c6ff2c1cc311a",
+      "path": "wasm/worldgraph_wasm.js",
+      "sha256": "ea8b7ea8e22f767a93bbb367e351264a13f1aa1fce47cc3dd8650dccb09cda86"
     },
     {
-      "path": "wasm/worldgraph_wasm_bg.wasm",
       "bytes": 942687,
-      "sha256": "f406429e313acb9159bd0d6bf0bb6812a703250c1159f8d370b4d1f3b540bcc8",
-      "gitSha": "caebbcc6a04bd54fc1d01fdb177f2107c234301d"
+      "gitSha": "caebbcc6a04bd54fc1d01fdb177f2107c234301d",
+      "path": "wasm/worldgraph_wasm_bg.wasm",
+      "sha256": "f406429e313acb9159bd0d6bf0bb6812a703250c1159f8d370b4d1f3b540bcc8"
     },
     {
-      "path": "wasm/worldgraph_wasm_bg.wasm.d.ts",
       "bytes": 2193,
-      "sha256": "d6072fd18546e7ad9814961081c4d37917aa703aeba3fb8e15fa6e5e5ca80db4",
-      "gitSha": "53490326fb447327ac5a4df85817b9807deab4b9"
+      "gitSha": "53490326fb447327ac5a4df85817b9807deab4b9",
+      "path": "wasm/worldgraph_wasm_bg.wasm.d.ts",
+      "sha256": "d6072fd18546e7ad9814961081c4d37917aa703aeba3fb8e15fa6e5e5ca80db4"
     }
   ],
   "limitations": [
-    "Authored geometry and deterministic kinematics; no learned reconstruction or prediction.",
+    "Authored lab and synthetic capture sample; no trained reconstruction or future prediction.",
+    "Source declarations and metric registration remain unverified.",
     "Browser CI uses software WebGL; physical GPU performance is unmeasured."
   ]
 }
