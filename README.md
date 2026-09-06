@@ -15,13 +15,36 @@
 
 ---
 
-## 🌐 Live demo — the twin in your browser
+## RuLab 4D world
 
-[![WorldGraph × SuperSplat — live 3D demo](https://raw.githubusercontent.com/ruvnet/worldgraph/main/docs/demo.png)](https://ruvnet.github.io/worldgraph/)
+**[Open RuLab](https://ruvnet.github.io/worldgraph/)** · [Implementation and controls](rulab/README.md) · [Architecture decision](docs/adr/205-rulab-temporal-gaussian-world.md) · [Review evidence](docs/mission/rulab-review.md)
 
-**▶ [Open the live demo →](https://ruvnet.github.io/worldgraph/)**
+Navigate an authored research facility through space and time. The browser combines Three.js materials with 42,442 actual anisotropic Gaussian primitives rendered by Spark. Pause a 120 second experiment, move the camera independently, inspect six persistent objects, operate the RF door, and rewind to reproduce the same state. Robotics, hospitality and healthcare configurations have separate event branches.
 
-The WorldGraph semantic twin rendered in 3D over a [SuperSplat](https://github.com/playcanvas/supersplat)-style scene — compiled to **WebAssembly** and running **entirely client-side** (no backend). Drag to orbit, click any element for its privacy-aware **provenance card**, and hit *Simulate* to see the OccWorld occupancy forecast. Person tracks carry no identity by construction.
+The **actual Rust WorldGraph core runs through WebAssembly**, maintaining 14 nodes and 14 relationships in an ENU coordinate frame. Timeline and graph exports stay on the device. Local Gaussian PLY, SPLAT and bounded SPZ imports support captured scenes; imported coordinates remain unverified until calibrated. RAD import is disabled pending bounded decompression support.
+
+The supplied architectural images are concept references. This demo implements authored geometry and deterministic kinematics. It does not reconstruct the facility from those images, train a learned world model, or establish state of the art accuracy. The [research assessment](docs/adr/205-rulab-temporal-gaussian-world.md) explains how a measured capture and prediction pipeline can extend it.
+
+```bash
+npm ci
+npm --prefix rulab ci
+cargo install wasm-pack --version 0.14.0 --locked
+npm --prefix rulab run build:wasm
+npm --prefix rulab run dev
+```
+
+Open `http://localhost:4173/worldgraph/`. Run the complete source, Rust, WASM, unit, production build and browser gates from the repository root:
+
+```bash
+npx --prefix rulab playwright install --with-deps chromium
+node bin/cli.js rulab verify
+```
+
+The harness writes gate logs, source identity and SHA256 evidence under `.artifacts/rulab/`. Every required gate must pass. `--without-browser` records a skipped browser gate and cannot produce an overall pass. CI uses Chromium with ANGLE/SwiftShader for actual WebGL2 execution; those measurements are **software rendering evidence**, not physical GPU performance claims. GitHub Pages publishes only after validation on `main`.
+
+The new read only MCP tools are available from a source checkout with `node bin/cli.js mcp start`. They create mission and validation plans and check evidence structure; they do not run arbitrary shell commands or independently verify caller supplied claims. Published npm version 0.1.3 predates these additions.
+
+The existing authenticated live stream remains available through [the Docker browser demo](demo/web/README.md) and [self hosting instructions](deploy/README.md).
 
 ---
 

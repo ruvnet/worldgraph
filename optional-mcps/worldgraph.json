@@ -1,9 +1,8 @@
 {
   "worldgraph": {
-    "command": "npx",
+    "command": "node",
     "args": [
-      "-y",
-      "worldgraph@latest",
+      "bin/cli.js",
       "mcp",
       "start"
     ]

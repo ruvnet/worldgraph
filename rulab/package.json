@@ -1,0 +1,31 @@
+{
+  "name": "@worldgraph/rulab",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 4173",
+    "build:wasm": "bash ../worldgraph-wasm/build-wasm.sh \"$PWD/public/wasm\"",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0 --port 4173",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@sparkjsdev/spark": "2.1.0",
+    "lucide": "0.577.0",
+    "three": "0.185.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.1",
+    "@types/node": "22.19.19",
+    "@types/three": "0.185.4",
+    "typescript": "5.9.3",
+    "vite": "7.3.6",
+    "vitest": "4.1.10"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  }
+}

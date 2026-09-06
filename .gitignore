@@ -3,3 +3,10 @@
 node_modules/
 dist/
 .npmrc
+.artifacts/
+.swarm/
+.ruflo/
+ruvector.db
+rulab/test-results/
+rulab/playwright-report/
+rulab/public/wasm/
