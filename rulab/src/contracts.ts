@@ -1,3 +1,4 @@
+import type { CaptureBundle, CapturePlaybackState } from './capture/types';
 /** RuLab scene contract. Positions are metres in East, North, Up. */
 export type Vec3 = [number, number, number];
 export type ScenarioId = 'robotics' | 'hospitality' | 'healthcare';
@@ -29,10 +30,14 @@ export interface RuLabView {
   move(forward: number, right: number): void;
   reset(): void;
   loadSplat(file: File): Promise<void>;
+  loadCapture(bundle: CaptureBundle): Promise<CapturePlaybackState>;
+  seekCapture(time: number): void;
+  retryCapture(): void;
   dispose(): void;
 }
 export interface ViewOptions {
   canvas: HTMLCanvasElement;
   onSelect: (id: string) => void;
   onMetrics: (metrics: RenderMetrics) => void;
+  onCaptureState?: (state: CapturePlaybackState, bundle: CaptureBundle) => void;
 }

@@ -23,6 +23,8 @@ Navigate an authored research facility through space and time. The browser combi
 
 The **actual Rust WorldGraph core runs through WebAssembly**, maintaining 14 nodes and 14 relationships in an ENU coordinate frame. Timeline and graph exports stay on the device. Local Gaussian PLY, SPLAT and bounded SPZ imports support captured scenes; imported coordinates remain unverified until calibrated. RAD import is disabled pending bounded decompression support.
 
+The **4D capture player** opens time-indexed Gaussian bundles with an independent camera, stable shared coordinates, verified per-frame hashes and explicit requested/displayed timestamps. Try **4D capture → Try synthetic 4D example**. Its separate Rust graph records capture provenance without asserting metric registration or inferred object identities. See the [capture format and research](docs/adr/206-rulab-capture-playback.md) and [delivery evidence](docs/mission/rulab-capture-review.md).
+
 The supplied architectural images are concept references. This demo implements authored geometry and deterministic kinematics. It does not reconstruct the facility from those images, train a learned world model, or establish state of the art accuracy. The [research assessment](docs/adr/205-rulab-temporal-gaussian-world.md) explains how a measured capture and prediction pipeline can extend it.
 
 ```bash
