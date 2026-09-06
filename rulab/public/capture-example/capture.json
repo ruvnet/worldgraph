@@ -1,0 +1,43 @@
+{
+  "format": "worldgraph.rulab.capture",
+  "version": 1,
+  "name": "Synthetic scanner study",
+  "source": "synthetic",
+  "coordinateSystem": "right-handed-y-up",
+  "units": "metres",
+  "duration": 4,
+  "bounds": {
+    "min": [
+      -5,
+      -0.2,
+      -4
+    ],
+    "max": [
+      5,
+      4.5,
+      4
+    ]
+  },
+  "frames": [
+    {
+      "time": 0,
+      "file": "frame-000.splat",
+      "sha256": "ef2bafbb80eae5b3ca3378fe4b22f27295e892cadfbb6b1d02c9165b90e467fa"
+    },
+    {
+      "time": 1,
+      "file": "frame-001.splat",
+      "sha256": "39a0a31392a0f1f69d70a3e51abc48b9585aedd941443006ec569e7df822e421"
+    },
+    {
+      "time": 2,
+      "file": "frame-002.splat",
+      "sha256": "a0571deb0cef98d640a52ac64984a393744791a8dd161b797289e6eba0c0ec3f"
+    },
+    {
+      "time": 3,
+      "file": "frame-003.splat",
+      "sha256": "670db080064712e6f6ada4ed9200b5e65a851f3d7e2de02d4ee5e6812d08c110"
+    }
+  ]
+}

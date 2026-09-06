@@ -4,7 +4,7 @@ RuLab brings an interactive laboratory into WorldGraph. Move independently throu
 
 The default scene contains **42,442 authored Gaussian primitives** alongside physically based Three.js architecture. This is an authored spatial demonstration with real Gaussian rendering and real Rust WorldGraph execution. It does not reconstruct the reference images, run a trained predictive world model, or control physical equipment.
 
-The public build targets [WorldGraph on GitHub Pages](https://ruvnet.github.io/worldgraph/). Publication is performed by the repository workflow after its validation gates pass on `main`; the link is not evidence of a particular deployed revision. See [ADR 205](../docs/adr/205-rulab-temporal-gaussian-world.md) for the design decision, research comparisons, and acceptance boundaries.
+The public build targets [WorldGraph on GitHub Pages](https://ruvnet.github.io/worldgraph/). The validation workflow retains its build and evidence artifacts. Automatic deployment currently fails before its job steps; verified artifacts can be published from the `gh-pages` branch without changing environment protections. Check [release metadata](https://ruvnet.github.io/worldgraph/release.json) for the deployed source and evidence. See [ADR 205](../docs/adr/205-rulab-temporal-gaussian-world.md) for the design decision, research comparisons, and acceptance boundaries.
 
 ## What runs
 
@@ -16,7 +16,8 @@ The public build targets [WorldGraph on GitHub Pages](https://ruvnet.github.io/w
 | Time | Analytical motion over 120 seconds; reversible seeking; pause/resume events; continuous door opening and closing |
 | Scenarios | Robotics, hospitality, and healthcare with independent event histories and different motion rates; hospitality and healthcare also add modular room props |
 | WorldGraph | The repository's compiled Rust WASM bridge; 14 nodes and 14 stable relationships; ENU coordinates and explicit authored provenance |
-| Imports | Local PLY, SPLAT, and SPZ preview with bounded validation; local experiment JSON import and export |
+| Imports | Local PLY, SPLAT, and SPZ preview; time-indexed capture bundles with SHA-256 verification; experiment JSON import and export |
+| Capture graph | Two Rust semantic nodes and one derived-from edge record the manifest, declared source, requested time, displayed sample and verified file hash; registration remains unverified |
 | Evidence | Device frame samples, Rust snapshot export, and a fixed CLI validation harness with source identity and hashed logs |
 
 The Graph view shows entity markers and authored relationship/trajectory diagnostics. Inspect the exported Rust snapshot for the actual typed graph relationships. The six scene objects are distinct from the 14 graph nodes, which also include rooms and provenance records.
@@ -85,7 +86,17 @@ Choose **Open splat** to preview a local asset. Files stay in the browser; this 
 
 Local RAD import is deliberately disabled because the current importer cannot enforce a reliable expanded data bound. Spark supports more formats than this application exposes.
 
-Imported appearance replaces the default visual scene and hides the authored object overlays. Its bounds are normalized for preview; it is **not metrically aligned** with the RuLab graph. The original experiment remains available in the inspector. Select an environment to restore the authored scene. Even within the import limits, decoded CPU and GPU allocations can exceed the file size, so physical device memory remains a practical constraint.
+Imported appearance replaces the default visual scene and hides the authored object overlays. Its bounds are normalized for preview; it is **not metrically aligned** with the RuLab graph. The authored inspector is hidden while imported appearance is displayed. Select an environment to restore the authored scene. Even within the import limits, decoded CPU and GPU allocations can exceed the file size, so physical device memory remains a practical constraint.
+
+## Play a time-indexed capture
+
+Choose **4D capture → Try synthetic 4D example**. The included 365,337-byte bundle contains four Gaussian samples of a moving robot rig. Pause playback, move the camera, and scrub between frames. The inspector distinguishes the requested time from the sample actually displayed. Export its separate Rust capture graph to inspect provenance. Select an environment to return to the original lab.
+
+To bring your own sequence, select **capture.json and every referenced frame file together**. See the [example manifest](public/capture-example/capture.json) and [capture contract](../docs/adr/206-rulab-capture-playback.md). The bundle uses a shared right-handed, Y-up coordinate system; one display transform is retained across all frames. Independently reconstructed frames must already be registered to each other. This player does not infer that registration.
+
+Limits are 64 KiB for the manifest, 240 frames, 120 seconds, 64 MiB per frame and 256 MiB total. Filenames are flat and local; manifests cannot fetch URLs or extract archives. Each frame must pass SHA-256 integrity checks, format preflight and decoded bounds validation. One decode runs at a time, superseded requests are discarded, and the last accepted scene stays visible on loading or failure. Retry is explicit. Source declarations, metric scale, registration and reconstruction accuracy remain unverified even when a hash matches.
+
+The sample is generated by `node scripts/create-capture-example.mjs`. It is synthetic Gaussian geometry, not a reconstruction of the concept images or a trained 4D world model. Playback selects samples without motion interpolation or future prediction. A trained reconstruction and calibrated capture pipeline can produce compatible bundles later.
 
 ## Harness and MCP
 
@@ -128,7 +139,7 @@ The source package declares `worldgraphs` version 0.1.3. This change does not pu
 
 ## Deployment and acceptance
 
-[The RuLab workflow](../.github/workflows/rulab.yml) validates pull requests and uploads evidence. Successful `main` pushes deploy `rulab/dist` through GitHub Actions Pages with the `/worldgraph/` base path. Repository Pages settings must select GitHub Actions as the source. The earlier Sites prototype is a separate deployment and is not changed by this build. The existing stream service and its demo source remain separate.
+[The RuLab workflow](../.github/workflows/rulab.yml) validates pull requests and uploads evidence. The configured `main` deployment job targets GitHub Actions Pages with the `/worldgraph/` base path. Its current pre-step failure requires administrator inspection; see [capture delivery review](../docs/mission/rulab-capture-review.md). Repository Pages settings must select GitHub Actions as the source. The earlier Sites prototype is a separate deployment and is not changed by this build. The existing stream service and its demo source remain separate.
 
 Physical mobile GPU performance, reconstruction quality, and prediction accuracy are unmeasured. Frame samples report the current device and scene only. They do not establish 30 or 60 FPS on other devices, nor do software rendered browser tests establish physical GPU performance.
 

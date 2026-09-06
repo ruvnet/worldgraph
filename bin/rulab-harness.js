@@ -12,7 +12,10 @@ export const MAX_REPORT_BYTES = 48 * 1024;
 const MAX_LOG_BYTES = 4 * 1024 * 1024;
 const MAX_ARTIFACTS = 16;
 const MAX_ARTIFACT_BYTES = 64 * 1024 * 1024;
-const REQUIRED_ARTIFACTS = ['rulab/dist/index.html', 'rulab/dist/wasm/worldgraph_wasm.js', 'rulab/dist/wasm/worldgraph_wasm_bg.wasm'];
+const REQUIRED_ARTIFACTS = [
+  'rulab/dist/index.html', 'rulab/dist/wasm/worldgraph_wasm.js', 'rulab/dist/wasm/worldgraph_wasm_bg.wasm',
+  ...['capture.json', 'frame-000.splat', 'frame-001.splat', 'frame-002.splat', 'frame-003.splat'].map((name) => `rulab/dist/capture-example/${name}`),
+];
 export const GATES = Object.freeze([
   { id: 'harness-tests', cwd: '.', executable: 'node', args: ['--test', 'bin/harness.test.js'] },
   { id: 'rust-tests', cwd: '.', executable: 'cargo', args: ['test', '--workspace', '--all-features', '--locked'] },
@@ -171,7 +174,8 @@ function writeArtifact(path, bytes) {
 }
 
 // Inspect only the small entrypoint and its direct local code/style references,
-// plus the known dynamically loaded WASM pair. Never recursively walk dist.
+// plus the known dynamically loaded WASM pair and five bundled capture files.
+// Never recursively walk dist or follow paths from an imported capture manifest.
 function collectArtifacts(root) {
   const artifacts = [], issues = [], paths = new Set(REQUIRED_ARTIFACTS);
   const dist = join(root, 'rulab/dist');

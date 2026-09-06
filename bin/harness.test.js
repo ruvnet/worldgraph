@@ -16,10 +16,11 @@ const ready = () => { const dispatch = createDispatcher(); assert.equal(dispatch
 const toolRequest = (name, args) => ({ jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name, arguments: args } });
 const planArgs = { objective: 'Build replayable RuLab', scope: 'rulab-4d', deployment: 'github-pages' };
 const commandOf = (g) => ({ executable: g.executable, args: [...g.args], cwd: g.cwd });
+const captureFiles = ['capture.json', 'frame-000.splat', 'frame-001.splat', 'frame-002.splat', 'frame-003.splat'];
 function reportFixture() {
   return { schemaVersion: 1, scope: 'rulab-4d', generatedAt: '2026-09-06T20:00:00.000Z', source: { commit: 'a'.repeat(40), dirty: false, packageVersion: PACKAGE_VERSION, location: 'checkout' },
     gates: GATES.map((g) => ({ id: g.id, status: 'passed', command: commandOf(g), exitCode: 0, durationMs: 123, reason: '', log: { path: `.artifacts/rulab/${g.id}.log`, sha256: 'b'.repeat(64), bytes: 30, truncated: false } })),
-    artifacts: ['index.html', 'assets/app.js', 'assets/app.css', 'wasm/worldgraph_wasm.js', 'wasm/worldgraph_wasm_bg.wasm'].map((path) => ({ path: `rulab/dist/${path}`, sha256: 'c'.repeat(64), bytes: 1000 })), summary: { passed: GATES.length, failed: 0, skipped: 0, complete: true } };
+    artifacts: ['index.html', 'assets/app.js', 'assets/app.css', 'wasm/worldgraph_wasm.js', 'wasm/worldgraph_wasm_bg.wasm', ...captureFiles.map((name) => `capture-example/${name}`)].map((path) => ({ path: `rulab/dist/${path}`, sha256: 'c'.repeat(64), bytes: 1000 })), summary: { passed: GATES.length, failed: 0, skipped: 0, complete: true } };
 }
 async function transport(chunks) {
   const output = new PassThrough(); let text = '';
@@ -169,7 +170,7 @@ test('report output refuses symlinked directories and replaces file symlinks wit
 
 function checkoutFixture() {
   const directory = mkdtempSync(join(tmpdir(), 'worldgraph-acceptance-'));
-  for (const path of ['worldgraph-wasm', 'rulab/dist/assets', 'rulab/dist/wasm']) mkdirSync(join(directory, path), { recursive: true });
+  for (const path of ['worldgraph-wasm', 'rulab/dist/assets', 'rulab/dist/wasm', 'rulab/dist/capture-example']) mkdirSync(join(directory, path), { recursive: true });
   writeFileSync(join(directory, '.gitignore'), '.artifacts/\nrulab/dist/\n');
   writeFileSync(join(directory, 'Cargo.toml'), '[workspace]\n');
   writeFileSync(join(directory, 'rulab/package.json'), '{}\n');
@@ -178,6 +179,15 @@ function checkoutFixture() {
   writeFileSync(join(directory, 'rulab/dist/assets/app.css'), 'body { color: white; }\n');
   writeFileSync(join(directory, 'rulab/dist/wasm/worldgraph_wasm.js'), 'export default async () => {};\n');
   writeFileSync(join(directory, 'rulab/dist/wasm/worldgraph_wasm_bg.wasm'), Buffer.from([0, 97, 115, 109, 1, 0, 0, 0]));
+  const frames = captureFiles.slice(1).map((file, time) => {
+    const bytes = Buffer.alloc(32);
+    bytes.writeFloatLE(time, 0);
+    for (const offset of [12, 16, 20]) bytes.writeFloatLE(0.1, offset);
+    bytes.set([255, 128, 0, 255, 255, 128, 128, 128], 24);
+    writeFileSync(join(directory, 'rulab/dist/capture-example', file), bytes);
+    return { time, file, sha256: createHash('sha256').update(bytes).digest('hex') };
+  });
+  writeFileSync(join(directory, 'rulab/dist/capture-example/capture.json'), JSON.stringify({ format: 'worldgraph.rulab.capture', version: 1, name: 'Synthetic harness fixture', source: 'synthetic', coordinateSystem: 'right-handed-y-up', units: 'metres', duration: 3, bounds: { min: [-1, -1, -1], max: [4, 1, 1] }, frames }));
   for (const args of [['init', '--quiet'], ['add', '.gitignore', 'Cargo.toml', 'rulab/package.json'], ['-c', 'user.name=Harness Test', '-c', 'user.email=harness@example.invalid', 'commit', '--quiet', '-m', 'fixture']]) {
     const result = spawnSync('git', args, { cwd: directory, encoding: 'utf8' });
     assert.equal(result.status, 0, result.stderr);
@@ -221,12 +231,12 @@ test('runner rejects dirty and unknown Git provenance even when every gate passe
   } finally { rmSync(directory, { recursive: true, force: true }); }
 });
 
-test('runner hashes shipped JS, CSS and WASM and rejects missing referenced artifacts', () => {
+test('runner hashes shipped JS, CSS, WASM and capture sample and rejects missing referenced artifacts', () => {
   const directory = checkoutFixture();
   try {
     const complete = runAcceptanceFixture(directory);
     assert.equal(complete.status, 0, complete.stderr);
-    assert.deepEqual(complete.report.artifacts.map((a) => a.path), ['rulab/dist/assets/app.css', 'rulab/dist/assets/app.js', 'rulab/dist/index.html', 'rulab/dist/wasm/worldgraph_wasm.js', 'rulab/dist/wasm/worldgraph_wasm_bg.wasm']);
+    assert.deepEqual(complete.report.artifacts.map((a) => a.path), ['rulab/dist/assets/app.css', 'rulab/dist/assets/app.js', ...captureFiles.map((file) => `rulab/dist/capture-example/${file}`), 'rulab/dist/index.html', 'rulab/dist/wasm/worldgraph_wasm.js', 'rulab/dist/wasm/worldgraph_wasm_bg.wasm']);
     for (const artifact of complete.report.artifacts) {
       const bytes = readFileSync(join(directory, artifact.path));
       assert.equal(artifact.bytes, bytes.length);
@@ -241,6 +251,23 @@ test('runner hashes shipped JS, CSS and WASM and rejects missing referenced arti
     const missingReference = runAcceptanceFixture(directory);
     assert.equal(missingReference.status, 1);
     assert.ok(missingReference.diagnostic.issues.some((issue) => issue.includes('Artifact unavailable: rulab/dist/assets/missing.js')));
+  } finally { rmSync(directory, { recursive: true, force: true }); }
+});
+
+test('each bundled capture file is required even when every execution gate passes', () => {
+  const directory = checkoutFixture();
+  try {
+    for (const file of captureFiles) {
+      const path = `rulab/dist/capture-example/${file}`, bytes = readFileSync(join(directory, path));
+      rmSync(join(directory, path));
+      const missing = runAcceptanceFixture(directory);
+      assert.equal(missing.status, 1, file);
+      assert.equal(missing.report.summary.complete, true);
+      assert.equal(missing.diagnostic.accepted, false);
+      assert.ok(validateEvidence({ report: missing.report }).issues.includes(`Required static artifact missing: ${path}.`));
+      writeFileSync(join(directory, path), bytes);
+    }
+    assert.equal(runAcceptanceFixture(directory).status, 0);
   } finally { rmSync(directory, { recursive: true, force: true }); }
 });
 
