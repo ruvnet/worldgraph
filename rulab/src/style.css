@@ -13,3 +13,7 @@
 @media(min-width:681px){.world-caption{left:228px;max-width:calc(100% - 605px)}.world-caption h1{font-size:clamp(48px,5vw,78px)}.scene-card{aspect-ratio:1.9}.location-line{font-size:10px;letter-spacing:1px}.world-caption p br{display:none}.camera-presets{flex-wrap:wrap}}
 @media(min-width:681px) and (max-width:1100px){.world-caption{left:190px;max-width:calc(100% - 235px)}.inspector{width:300px}}
 @media(max-width:680px){.inspector{width:auto}.scene-card>span{font-size:10px}.view-tabs button{font-size:12px}.camera-presets button{font-size:11px}.world-caption p{font-size:12px}.world-caption h1{font-size:54px}.top-actions #info{display:inline-flex}.brand-divider{margin:0 7px}.brand-lab{font-size:12px}.source-pill{display:none}.transport-meta label,.transport-meta select,.timeline-labels,.timeline-ticks{font-size:9px}.world-caption{bottom:225px}.location-line{font-size:9px}}
+
+.inspector{visibility:hidden;pointer-events:none}.inspector.is-open{visibility:visible;pointer-events:auto}
+
+.capture-preview .world-caption,.capture-preview .inspector-section,.capture-preview .entity-detail,.capture-preview .mini-map,.capture-preview .graph-health,.capture-preview .inspector-stats>div:first-child{display:none}#capture-note{font-size:14px;line-height:1.6;color:#c5d3bc}
