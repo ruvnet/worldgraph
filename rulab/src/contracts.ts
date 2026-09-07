@@ -21,7 +21,7 @@ export interface RenderMetrics {
   backend: 'webgl2' | 'unavailable'; fps: number; frameMs: number;
   splatCount: number; drawCalls: number; camera: Vec3; status: string;
   frameTimesMs?: number[];
-  graphics?: {quality:Quality;pixelRatio:number;exposure:number;hdr:boolean;reflections:boolean;photographicMaps:number;environment:string};
+  graphics?: {quality:Quality;mode:ViewMode;gpuRenderer:string;drawingBuffer:[number,number];pixelRatio:number;exposure:number;hdr:boolean;reflections:boolean;photographicMaps:number;environment:string};
 }
 export interface RuLabView {
   setFrame(frame: WorldFrame): void;
