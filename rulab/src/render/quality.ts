@@ -12,3 +12,9 @@ export function adaptiveRatio(ratio:number,frameMs:number,cap:number):number {
   return Math.min(cap,Math.max(.65,frameMs>33.3?ratio-.15:frameMs<18?ratio+.1:ratio));
 }
 export function clampExposure(value:number):number{return Number.isFinite(value)?Math.max(.4,Math.min(value,2)):1;}
+
+/** Bound HDR target cost independently of monitor size or device DPR. */
+export function budgetPixelRatio(requested:number,width:number,height:number,quality:Quality):number {
+  const budget=quality==='quality'?4_000_000:quality==='performance'?1_000_000:2_000_000;
+  return Math.min(requested,Math.sqrt(budget/(Math.max(1,width)*Math.max(1,height))));
+}
