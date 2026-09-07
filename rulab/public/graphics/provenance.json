@@ -1,0 +1,61 @@
+{
+  "schema": "worldgraph.graphics.assets.v1",
+  "assets": [
+    {
+      "file": "sunset.hdr",
+      "bytes": 1610744,
+      "sha256": "43ad8b5ae5de42a6d0123ed063ba6867488c2f90adf24efdf051781952b5e9cb",
+      "source": "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/industrial_sunset_02_1k.hdr",
+      "asset": "https://polyhaven.com/a/industrial_sunset_02",
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "concrete-diff.jpg",
+      "bytes": 776097,
+      "sha256": "6db84a6d87dc50508b9d134d6fbd2b7e876b8081a5f43a118a249ca18de73af5",
+      "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_floor_02/concrete_floor_02_diff_1k.jpg",
+      "asset": "https://polyhaven.com/a/concrete_floor_02",
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "concrete-rough.jpg",
+      "bytes": 318550,
+      "sha256": "c7f026a611b7859903c61ec7fd4574944157223e9e7796413dd6e2a66eaeac7a",
+      "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_floor_02/concrete_floor_02_rough_1k.jpg",
+      "asset": "https://polyhaven.com/a/concrete_floor_02",
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "concrete-normal.jpg",
+      "bytes": 192757,
+      "sha256": "fcda391b57a816d646ae15544688be53790478da5cd48dbe514b3c6901415e61",
+      "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_floor_02/concrete_floor_02_nor_gl_1k.jpg",
+      "asset": "https://polyhaven.com/a/concrete_floor_02",
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "wood-diff.jpg",
+      "bytes": 228279,
+      "sha256": "d758be23e8fe7bfbd73bc4ab257cfd59406e1835f6557c12a67cd4fdb15de0d8",
+      "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_planks_grey/wood_planks_grey_diff_1k.jpg",
+      "asset": "https://polyhaven.com/a/wood_planks_grey",
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "wood-rough.jpg",
+      "bytes": 186804,
+      "sha256": "ef640502cec94bd2b6500e252891a778a7a721be16b5536d4efc9fe4d99b12aa",
+      "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_planks_grey/wood_planks_grey_rough_1k.jpg",
+      "asset": "https://polyhaven.com/a/wood_planks_grey",
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "wood-normal.jpg",
+      "bytes": 157419,
+      "sha256": "5e570e57d688b016b217b9e8e0592f9a8b3364406e22bf6cd775da990452bdb6",
+      "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_planks_grey/wood_planks_grey_nor_gl_1k.jpg",
+      "asset": "https://polyhaven.com/a/wood_planks_grey",
+      "license": "CC0-1.0"
+    }
+  ]
+}
