@@ -144,3 +144,11 @@ The source package declares `worldgraphs` version 0.1.3. This change does not pu
 Physical mobile GPU performance, reconstruction quality, and prediction accuracy are unmeasured. Frame samples report the current device and scene only. They do not establish 30 or 60 FPS on other devices, nor do software rendered browser tests establish physical GPU performance.
 
 Acceptance test: play to 10 seconds, pause the AMR, open the RF door, advance to 20 seconds, then export the experiment and Rust graph. Restore the experiment and seek to 20 seconds. Object identities, poses, door state, and the Rust graph snapshot must match. Translate the camera while time is paused and confirm actual spatial parallax. Run `node bin/cli.js rulab verify` on the same clean commit and retain its complete report.
+
+## GPU graphics prototype
+
+The unpublished graphics branch adds photographic materials, HDR illumination, FXAA, and an explicit Quality tier with subtle bloom and floor mesh reflections. Open **Graphics settings** to select quality, adjust exposure or begin a fresh measurement. Export GPU evidence after navigating. All assets are bundled; no cloud GPU or runtime asset service is required.
+
+Adaptive and Performance keep expensive effects disabled. Imported splats retain baked appearance and never inherit the authored floor reflection. The scene is still an authored concept, not a trained reconstruction of the reference images. Read [ADR 207](../docs/adr/207-rulab-gpu-realism.md) for budgets, limitations and the physical GPU acceptance procedure. Asset licenses and hashes live in `public/graphics/provenance.json`.
+
+Run `npm run typecheck`, `npm test`, `npm run build` and `npm run test:e2e` here, or run the complete fixed harness with `node bin/cli.js rulab verify` from the repository root. A software WebGL pass is not a hardware performance claim. Do not merge or deploy without a new publication instruction.

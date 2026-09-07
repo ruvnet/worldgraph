@@ -128,3 +128,35 @@ test('ignores an experiment read completed after a newer environment choice',asy
   await page.locator('#experiment-file').setInputFiles({name:'immediate.json',mimeType:'application/json',buffer:payload});
   await expect(page.locator('#toast')).toContainText('Experiment restored');await expect(page.locator('#scene-kicker')).toContainText('ROBOTICS');
 });
+
+test('loads photographic assets and switches GPU quality without changing replay',async({page},info)=>{
+  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await ready(page);
+  await expect(page.locator('#world')).toHaveAttribute('data-graphics',/"photographicMaps":6/, {timeout:60_000});
+  await expect(page.locator('#world')).toHaveAttribute('data-graphics',/photographic HDR/);
+  await seek(page,24);const graph=await graphJson(page);
+  await page.getByRole('button',{name:'Graphics settings',exact:true}).click();
+  await page.getByLabel('Rendering quality',{exact:true}).selectOption('quality');
+  await expect(page.locator('#world')).toHaveAttribute('data-graphics',/"reflections":true/);
+  await page.getByRole('slider',{name:'Exposure',exact:true}).evaluate(element=>{(element as HTMLInputElement).value='0.8';element.dispatchEvent(new Event('input',{bubbles:true}));});
+  await expect(page.locator('#world')).toHaveAttribute('data-graphics',/"exposure":0.8/);
+  await page.getByRole('button',{name:'Close graphics settings'}).click();
+  await page.screenshot({path:info.outputPath('rulab-gpu-quality.png'),fullPage:true});
+  expect(await graphJson(page)).toBe(graph);
+  await page.getByRole('button',{name:'Graphics settings',exact:true}).click();
+  await page.getByLabel('Rendering quality',{exact:true}).selectOption('performance');
+  await expect(page.locator('#world')).toHaveAttribute('data-graphics',/"reflections":false/);
+  await expect(page.locator('#world')).toHaveAttribute('data-graphics',/"quality":"performance"/);
+  await page.getByRole('button',{name:'Close graphics settings'}).click();
+  expect(await graphJson(page)).toBe(graph);expect(errors).toEqual([]);
+});
+
+test('missing photographic assets retain a navigable fallback',async({page})=>{
+  await page.route('**/graphics/*',route=>route.fulfill({status:404,body:'missing test fixture'}));
+  await ready(page);await page.getByRole('button',{name:'Graphics settings',exact:true}).click();
+  await expect(page.locator('#graphics-status')).toContainText('0/6 photographic maps');
+  await expect(page.locator('#graphics-status')).toContainText('generated room');
+  await page.getByRole('button',{name:'Close graphics settings'}).click();
+  await page.getByRole('button',{name:'Robot',exact:true}).click();
+  await seek(page,18);await expect(page.locator('#graph-count')).toHaveText('14');
+  await expect(page.locator('#world')).toHaveAttribute('data-backend','webgl2');
+});

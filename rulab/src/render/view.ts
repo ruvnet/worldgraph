@@ -1,4 +1,7 @@
 import * as T from 'three';
+import {makeCinema} from './cinema';
+import {graphicsProfile,adaptiveRatio,clampExposure} from './quality';
+import {loadPhotographicAssets} from './photographic';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { SparkRenderer, SplatMesh } from '@sparkjsdev/spark';
 import type { ViewOptions, RuLabView, RenderMetrics, WorldFrame, ViewMode, Quality } from '../contracts';
@@ -16,7 +19,7 @@ const PRESETS:Record<'overview'|'robot'|'drone'|'rf',{position:Position3;target:
 };
 function unavailable(options:ViewOptions,status:string):RuLabView{
   options.onMetrics({backend:'unavailable',fps:0,frameMs:0,splatCount:0,drawCalls:0,camera:[3.2,-10,2.45],status});
-  return {setFrame(){},setMode(){},setQuality(){},cameraPreset(){},move(){},reset(){},async loadSplat(){throw new Error('Gaussian rendering requires WebGL2. Try a browser with GPU access.');},async loadCapture(){throw new Error('Capture playback requires WebGL2.');},seekCapture(){},retryCapture(){},dispose(){}};
+  return {setFrame(){},setMode(){},setQuality(){},setExposure(){},cameraPreset(){},move(){},reset(){},async loadSplat(){throw new Error('Gaussian rendering requires WebGL2. Try a browser with GPU access.');},async loadCapture(){throw new Error('Capture playback requires WebGL2.');},seekCapture(){},retryCapture(){},dispose(){}};
 }
 /** Actual perspective geometry, anisotropic Gaussians, state-driven motion. */
 export async function createRuLabView(options:ViewOptions):Promise<RuLabView>{
@@ -42,28 +45,33 @@ export async function createRuLabView(options:ViewOptions):Promise<RuLabView>{
   for(const z of [-11,0,11]){const fill=new T.PointLight(0xffc888,55,20,2);fill.position.set(-4,5,z);scene.add(fill);}
   const rfLight=new T.PointLight(0xd3e2f2,26,8,2);rfLight.position.set(9.4,3.6,-3);scene.add(rfLight);
   const environmentRoom=new RoomEnvironment();const pmrem=new T.PMREMGenerator(renderer);const environment=pmrem.fromScene(environmentRoom,.08);startupCleanup.push(()=>environment.dispose());scene.environment=environment.texture;scene.environmentIntensity=.62;environmentRoom.dispose();pmrem.dispose();if(startupShaderFailed)throw new Error('GPU environment shader initialization failed.');
+  renderer.info.autoReset=false;
+  const reflectionExcluded:T.Object3D[]=[spark,architecture.splats];entities.root.traverse(o=>{if(o instanceof SplatMesh)reflectionExcluded.push(o);});
+  const cinema=makeCinema(renderer,scene,camera,reflectionExcluded);startupCleanup.push(()=>cinema.dispose());
+  let photographic:Awaited<ReturnType<typeof loadPhotographicAssets>>|undefined;
   const raycaster=new T.Raycaster();let disposed=false,failed=false,importGeneration=0,loading=false;
   let capture:CapturePlayback<SplatMesh>|null=null,pendingCapture:CapturePlayback<SplatMesh>|null=null,captureBundle:CaptureBundle|null=null;
   let singleImportAbort:AbortController|null=null;let decodeTail:Promise<void>=Promise.resolve();
   let imported:SplatMesh|undefined,mode:ViewMode='cinematic',quality:Quality='auto',lastFrame:WorldFrame|undefined;
-  let importName='';let ratio=Math.min(window.devicePixelRatio||1,1.5);let raf=0,lastTime=0,windowStart=0,frames=0,elapsedMs=0,lastAdjustment=0;let frameSamples:number[]=[];
+  let importName='';let ratio=graphicsProfile('auto',window.devicePixelRatio,cinema.hdr).pixelRatio;let raf=0,lastTime=0,windowStart=0,frames=0,elapsedMs=0,lastAdjustment=0;let frameSamples:number[]=[];
   const controls=makeControls(canvas,camera,(x,y)=>{if(disposed||failed||imported||capture)return;const r=canvas.getBoundingClientRect();raycaster.setFromCamera(new T.Vector2((x-r.left)/r.width*2-1,-((y-r.top)/r.height)*2+1),camera);
     const hits=raycaster.intersectObjects(entities.pickables,true);for(const hit of hits){let object:T.Object3D|null=hit.object;while(object){if(typeof object.userData.entityId==='string'){options.onSelect(object.userData.entityId);return;}object=object.parent;}}
   });
   startupCleanup.push(()=>controls.dispose());controls.lookAt(PRESETS.overview.position,PRESETS.overview.target);
   function status(){if(capture&&captureBundle){const state=capture.getState();return `${captureBundle.manifest.source} capture: ${captureBundle.manifest.name}. Requested ${state.requestedTime.toFixed(2)}s; displayed ${state.displayedTime?.toFixed(2)??'none'}s.${state.error?' Frame failed; last good sample held.':state.loading?' Loading sample.':''} Fixed preview transform; registration unverified.`;}return importName?`Local asset: ${importName}. Preview normalized; coordinates and provenance unverified.`:'Authored RuLab. Gaussian surfaces and mesh objects. Scripted replay.';}
-  function metrics(fps:number,frameMs:number):RenderMetrics{return {backend:failed?'unavailable':'webgl2',fps,frameMs,frameTimesMs:[...frameSamples],splatCount:capture?.displayedAsset?.numSplats??imported?.numSplats??(architecture.splats.numSplats+entities.splatCount),drawCalls:renderer.info.render.calls,camera:[camera.position.x,-camera.position.z,camera.position.y],status:status()};}
-  function applyMode(){const external=Boolean(imported||capture);entities.root.visible=!external;controls.setCollisionEnabled(!external);architecture.meshes.visible=!external&&mode!=='splats';architecture.splats.visible=!external;architecture.splats.opacity=mode==='cinematic'?.26:mode==='graph'?.16:.96;entities.setGraph(!external&&mode==='graph');atmosphere.visible=!external;scene.background=external?new T.Color(0x141c1e):null;scene.fog=external||mode==='splats'?null:new T.FogExp2(0x777b7b,.014);}
-  function resize(){if(disposed)return;const r=canvas.getBoundingClientRect();const w=Math.max(1,Math.round(r.width)),h=Math.max(1,Math.round(r.height));renderer.setPixelRatio(ratio);renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
-  const observer=new ResizeObserver(resize);startupCleanup.push(()=>observer.disconnect());observer.observe(canvas);resize();applyMode();
+  function metrics(fps:number,frameMs:number):RenderMetrics{return {graphics:{quality,pixelRatio:ratio,exposure:renderer.toneMappingExposure,hdr:cinema.hdr,reflections:cinema.reflectionEnabled,photographicMaps:photographic?.materialMaps??0,environment:photographic?.hdri?'photographic HDR':'generated room'},backend:failed?'unavailable':'webgl2',fps,frameMs,frameTimesMs:[...frameSamples],splatCount:capture?.displayedAsset?.numSplats??imported?.numSplats??(architecture.splats.numSplats+entities.splatCount),drawCalls:renderer.info.render.calls,camera:[camera.position.x,-camera.position.z,camera.position.y],status:status()};}
+  function applyMode(){const external=Boolean(imported||capture);entities.root.visible=!external;controls.setCollisionEnabled(!external);architecture.meshes.visible=!external&&mode!=='splats';architecture.splats.visible=!external&&mode!=='cinematic';architecture.splats.opacity=mode==='graph'?.16:.96;cinema.setAuthored(!external&&mode==='cinematic');entities.setGraph(!external&&mode==='graph');atmosphere.visible=!external;scene.background=external?new T.Color(0x141c1e):null;scene.fog=external||mode==='splats'?null:new T.FogExp2(0x777b7b,.014);}
+  function resize(){if(disposed)return;const r=canvas.getBoundingClientRect();const w=Math.max(1,Math.round(r.width)),h=Math.max(1,Math.round(r.height));renderer.setPixelRatio(ratio);renderer.setSize(w,h,false);cinema.resize(w,h,ratio);camera.aspect=w/h;camera.updateProjectionMatrix();}
+  const observer=new ResizeObserver(resize);startupCleanup.push(()=>observer.disconnect());observer.observe(canvas);resize();applyMode();cinema.configure(graphicsProfile(quality,window.devicePixelRatio,cinema.hdr));
+  void loadPhotographicAssets(renderer,architecture.meshes,scene,()=>disposed).then(value=>{photographic=value;if(!disposed)options.onMetrics(metrics(0,0));});
   function contextLost(e:Event){e.preventDefault();failRenderer('GPU context lost. Reload to restore the 3D renderer.');}
   canvas.addEventListener('webglcontextlost',contextLost);
   renderer.debug.onShaderError=()=>{if(!failed)failRenderer('A required GPU shader could not compile. Reference image mode is active.');};
   function loop(time:number){if(disposed||failed)return;raf=requestAnimationFrame(loop);if(document.hidden){lastTime=0;windowStart=time;frames=0;elapsedMs=0;frameSamples=[];return;}const dt=lastTime?(time-lastTime)/1000:1/60;lastTime=time;controls.update(dt);
-    try{renderer.render(scene,camera);}catch(error){failRenderer(`GPU rendering failed: ${boundedError(error)}`);return;}
+    try{cinema.render();}catch(error){failRenderer(`GPU rendering failed: ${boundedError(error)}`);return;}
     if(failed)return;frames++;elapsedMs+=dt*1000;frameSamples.push(dt*1000);if(!windowStart)windowStart=time;
     if(time-windowStart>=750){const frameMs=elapsedMs/frames;const fps=1000/frameMs;options.onMetrics(metrics(Math.round(fps),Math.round(frameMs*10)/10));
-      if(quality==='auto'&&time-lastAdjustment>3500){const cap=Math.min(window.devicePixelRatio||1,1.5);const next=frameMs>32?Math.max(.7,ratio-.15):frameMs<18?Math.min(cap,ratio+.1):ratio;if(Math.abs(next-ratio)>.02){ratio=next;resize();lastAdjustment=time;}}
+      if(quality==='auto'&&time-lastAdjustment>3500){const cap=graphicsProfile('auto',window.devicePixelRatio,cinema.hdr).pixelRatio;const next=adaptiveRatio(ratio,frameMs,cap);if(Math.abs(next-ratio)>.02){ratio=next;resize();lastAdjustment=time;}}
       frames=0;elapsedMs=0;frameSamples=[];windowStart=time;}
   }
   function resetMetricWindow(){frameSamples=[];windowStart=0;frames=0;elapsedMs=0;lastTime=0;}
@@ -71,7 +79,7 @@ export async function createRuLabView(options:ViewOptions):Promise<RuLabView>{
   function disposeAsset(asset:SplatMesh){asset.removeFromParent();asset.dispose();}
   function stopCapture(){pendingCapture?.dispose();pendingCapture=null;capture?.dispose();capture=null;captureBundle=null;}
   function disposeView(loseContext=true){
-    if(disposed)return;disposed=true;importGeneration++;singleImportAbort?.abort();stopCapture();cancelAnimationFrame(raf);observer.disconnect();canvas.removeEventListener('webglcontextlost',contextLost);controls.dispose();if(imported)disposeAsset(imported);imported=undefined;architecture.dispose();entities.dispose();disposeGroup(atmosphere);sun.shadow.map?.dispose();environment.dispose();spark.dispose();renderer.dispose();if(loseContext)renderer.forceContextLoss();
+    if(disposed)return;disposed=true;importGeneration++;singleImportAbort?.abort();stopCapture();cancelAnimationFrame(raf);observer.disconnect();canvas.removeEventListener('webglcontextlost',contextLost);controls.dispose();if(imported)disposeAsset(imported);imported=undefined;cinema.dispose();photographic?.dispose();architecture.dispose();entities.dispose();disposeGroup(atmosphere);sun.shadow.map?.dispose();environment.dispose();spark.dispose();renderer.dispose();if(loseContext)renderer.forceContextLoss();
   }
   function failRenderer(message:string){
     if(disposed)return;failed=true;const snapshot={...metrics(0,0),backend:'unavailable' as const,status:message};
@@ -98,7 +106,8 @@ export async function createRuLabView(options:ViewOptions):Promise<RuLabView>{
   return {
     setFrame(frame){if(disposed||failed)return;lastFrame=frame;entities.update(frame);},
     setMode(value){if(disposed)return;mode=value;applyMode();},
-    setQuality(value){if(disposed)return;quality=value;ratio=value==='performance'?.85:Math.min(window.devicePixelRatio||1,value==='quality'?1.85:1.5);renderer.shadowMap.enabled=value!=='performance';spark.maxStdDev=value==='performance'?Math.sqrt(5):Math.sqrt(7);resize();},
+    setQuality(value){if(disposed)return;quality=value;const profile=graphicsProfile(value,window.devicePixelRatio,cinema.hdr);ratio=profile.pixelRatio;renderer.shadowMap.enabled=profile.shadows;if(sun.shadow.mapSize.x!==profile.shadowSize){sun.shadow.map?.dispose();sun.shadow.map=null;sun.shadow.mapSize.set(profile.shadowSize,profile.shadowSize);}cinema.configure(profile);spark.maxStdDev=value==='performance'?Math.sqrt(5):Math.sqrt(7);resetMetricWindow();resize();options.onMetrics(metrics(0,0));},
+    setExposure(value){if(disposed)return;renderer.toneMappingExposure=clampExposure(value);resetMetricWindow();options.onMetrics(metrics(0,0));},
     cameraPreset(name){if(disposed)return;const preset=PRESETS[name];controls.lookAt(preset.position,preset.target);},
     move(forward,right){if(!disposed)controls.move(forward*.4,right*.4);},
     reset(){if(disposed)return;resetMetricWindow();importGeneration++;singleImportAbort?.abort();stopCapture();if(imported)disposeAsset(imported);imported=undefined;importName='';camera.fov=64;camera.updateProjectionMatrix();controls.lookAt(PRESETS.overview.position,PRESETS.overview.target);applyMode();options.onMetrics(metrics(0,0));},

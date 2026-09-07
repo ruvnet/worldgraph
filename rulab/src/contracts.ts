@@ -21,11 +21,13 @@ export interface RenderMetrics {
   backend: 'webgl2' | 'unavailable'; fps: number; frameMs: number;
   splatCount: number; drawCalls: number; camera: Vec3; status: string;
   frameTimesMs?: number[];
+  graphics?: {quality:Quality;pixelRatio:number;exposure:number;hdr:boolean;reflections:boolean;photographicMaps:number;environment:string};
 }
 export interface RuLabView {
   setFrame(frame: WorldFrame): void;
   setMode(mode: ViewMode): void;
   setQuality(quality: Quality): void;
+  setExposure(value: number): void;
   cameraPreset(name: 'overview' | 'robot' | 'drone' | 'rf'): void;
   move(forward: number, right: number): void;
   reset(): void;
