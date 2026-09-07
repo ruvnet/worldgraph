@@ -20,7 +20,9 @@ permissions:
 
 concurrency:
   group: rulab-${{ github.ref }}
-  cancel-in-progress: false
+  # Superseded PR candidates must not delay validation of the current tree.
+  # Keep main publication jobs serialized and uncancelled.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   validate:
