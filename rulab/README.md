@@ -152,3 +152,19 @@ The unpublished graphics branch adds photographic materials, HDR illumination, F
 Adaptive and Performance keep expensive effects disabled. Imported splats retain baked appearance and never inherit the authored floor reflection. The scene is still an authored concept, not a trained reconstruction of the reference images. Read [ADR 207](../docs/adr/207-rulab-gpu-realism.md) for budgets, limitations and the physical GPU acceptance procedure. Asset licenses and hashes live in `public/graphics/provenance.json`.
 
 Run `npm run typecheck`, `npm test`, `npm run build` and `npm run test:e2e` here, or run the complete fixed harness with `node bin/cli.js rulab verify` from the repository root. A software WebGL pass is not a hardware performance claim. Do not merge or deploy without a new publication instruction.
+
+### Desktop hardware acceptance
+
+On a desktop with a graphical session and GPU drivers, install the pinned dependencies and Chromium, build WASM, then run:
+
+```bash
+cd rulab
+npm ci
+npx playwright install chromium
+npm run build:wasm
+npm run benchmark:gpu
+```
+
+This separate headed browser configuration has no SwiftShader flags. It rejects known software driver names, warms shaders, exercises four camera views for 60 seconds, saves a screenshot and `gpu-results/**/gpu-evidence.json`, and requires at least 300 samples with p95 frame time no greater than 33.3 ms. A failure retains evidence. Browser driver identity is not independent hardware attestation. To evaluate the cheaper profile, run `RULAB_GPU_QUALITY=performance npm run benchmark:gpu`.
+
+This command has not run on a physical GPU in the development environment. It is separate from the mandatory software WebGL regression suite; passing that suite never reports this hardware gate as passed. Test actual phones through the in-app measurement workflow, not desktop mobile emulation.
