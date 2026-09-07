@@ -10,10 +10,13 @@ export const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..
 export const PACKAGE_VERSION = JSON.parse(readFileSync(join(PACKAGE_ROOT, 'package.json'), 'utf8')).version;
 export const MAX_REPORT_BYTES = 48 * 1024;
 const MAX_LOG_BYTES = 4 * 1024 * 1024;
-const MAX_ARTIFACTS = 16;
+const MAX_ARTIFACTS = 24;
+export const GRAPHICS_FILES = ['sunset.hdr','concrete-diff.jpg','concrete-rough.jpg','concrete-normal.jpg','wood-diff.jpg','wood-rough.jpg','wood-normal.jpg','provenance.json'];
 const MAX_ARTIFACT_BYTES = 64 * 1024 * 1024;
 const REQUIRED_ARTIFACTS = [
+
   'rulab/dist/index.html', 'rulab/dist/wasm/worldgraph_wasm.js', 'rulab/dist/wasm/worldgraph_wasm_bg.wasm',
+  ...GRAPHICS_FILES.map((name) => `rulab/dist/graphics/${name}`),
   ...['capture.json', 'frame-000.splat', 'frame-001.splat', 'frame-002.splat', 'frame-003.splat'].map((name) => `rulab/dist/capture-example/${name}`),
 ];
 export const GATES = Object.freeze([
@@ -212,6 +215,19 @@ function collectArtifacts(root) {
       artifacts.push({ path, sha256: sha256(content), bytes: content.length });
     } catch (error) { issues.push(`Artifact unavailable: ${path} (${error.message})`); }
   }
+  try {
+    const manifest = JSON.parse(readBounded('rulab/dist/graphics/provenance.json', 16 * 1024).toString('utf8'));
+    requireInput(manifest.schema === 'worldgraph.graphics.assets.v1' && Array.isArray(manifest.assets) && manifest.assets.length === 7, 'Invalid graphics provenance manifest.');
+    let total = 0;
+    for (const file of GRAPHICS_FILES.filter((name) => name !== 'provenance.json')) {
+      const records = manifest.assets.filter((asset) => asset?.file === file);
+      requireInput(records.length === 1, `Graphics provenance must identify ${file} exactly once.`);
+      const record = records[0], artifact = artifacts.find((item) => item.path === `rulab/dist/graphics/${file}`);
+      requireInput(artifact && artifact.sha256 === record.sha256 && artifact.bytes === record.bytes && record.license === 'CC0-1.0', `Graphics provenance mismatch: ${file}.`);
+      total += artifact.bytes;
+    }
+    requireInput(total < 4 * 1024 * 1024, 'Graphics assets exceed the 4 MiB delivery budget.');
+  } catch (error) { issues.push(`Graphics asset validation failed: ${error.message}`); }
   return { artifacts, issues };
 }
 
