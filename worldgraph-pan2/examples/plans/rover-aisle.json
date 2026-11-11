@@ -1,0 +1,27 @@
+{
+  "name": "Rover crosses the lab",
+  "source_snapshot_hash": "sha256:rulab-authored-robotics-v1",
+  "source_stream_epoch": 1,
+  "generation_seed": 123,
+  "projection_id": "rulab-public-demo",
+  "hosted_processing_approved": true,
+  "duration_sec": 5,
+  "first_frame": "A clean, modern robotics research lab seen from one side. Pale concrete floor with a painted yellow travel lane running left to right across the middle of the room. A small white four-wheeled rover with a black sensor mast is parked at the left end of the lane. Nobody is in the room.",
+  "scene": [
+    { "kind": "box", "center_m": [-3.0, 2.0, 0.25], "size_m": [0.6, 0.45, 0.5], "class": "wheeled_rover" },
+    { "kind": "box", "center_m": [0.0, 4.0, 0.45], "size_m": [2.4, 0.9, 0.8], "class": "steel_workbench" },
+    { "kind": "box", "center_m": [3.0, 2.0, 0.4], "size_m": [0.8, 0.8, 0.8], "class": "charging_dock" }
+  ],
+  "lighting": "Cool, even overhead LED light with soft floor reflections and gentle shadows under the benches.",
+  "view": "Static side view from the near wall at standing eye height, framing the whole travel lane from the rover on the left to the charging dock on the right.",
+  "subjects": [
+    { "name": "Rover", "attribute": "Small white four-wheeled rover with rubber tyres and a short black sensor mast." }
+  ],
+  "events": [
+    { "until_sec": 5, "description": "The rover pulls away and drives steadily along the yellow lane from left to right, its wheels turning, and slows to a stop in front of the charging dock." }
+  ],
+  "actions": [
+    { "from_sec": 0.5, "to_sec": 4, "subject": 1, "action": "drives along the yellow lane from left to right at a steady pace." },
+    { "from_sec": 4, "to_sec": 5, "subject": 1, "action": "slows and stops in front of the charging dock." }
+  ]
+}

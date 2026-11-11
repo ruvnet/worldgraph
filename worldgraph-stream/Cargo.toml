@@ -9,7 +9,13 @@ repository.workspace = true
 
 [features]
 default = []
-server = ["dep:axum", "dep:futures-util", "dep:jsonwebtoken", "dep:tokio"]
+server = [
+    "dep:axum",
+    "dep:futures-util",
+    "dep:jsonwebtoken",
+    "dep:tokio",
+    "dep:wifi-densepose-worldmodel",
+]
 
 [dependencies]
 serde.workspace = true
@@ -17,6 +23,7 @@ serde_json.workspace = true
 thiserror.workspace = true
 wifi-densepose-worldgraph = { path = "../wifi-densepose-worldgraph", version = "0.3.2" }
 wifi-densepose-geo = { path = "../wifi-densepose-geo", version = "0.1.0", default-features = false }
+wifi-densepose-worldmodel = { path = "../wifi-densepose-worldmodel", version = "0.4.0", optional = true }
 axum = { version = "0.8", features = ["ws"], optional = true }
 futures-util = { version = "0.3", optional = true }
 jsonwebtoken = { version = "9", optional = true }

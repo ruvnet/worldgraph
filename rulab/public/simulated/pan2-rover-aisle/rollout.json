@@ -1,0 +1,84 @@
+{
+  "format": "worldgraph.simulated.rollout",
+  "version": 1,
+  "name": "Rover crosses the lab",
+  "simulated": true,
+  "media": {
+    "file": "clip.mp4",
+    "sha256": "aa83ca55150c00323f0d431934359f253bfcc8573c94da144263ba29fc18702c",
+    "bytes": 455591,
+    "mediaType": "video/mp4",
+    "width": 1248,
+    "height": 704,
+    "fps": 24,
+    "durationSec": 5.0
+  },
+  "caption": {
+    "file": "caption.json",
+    "sha256": "4b185bc4a3df40c8b0141a266015cda823b4a511140b522c1489e5fb09ccebeb",
+    "bytes": 1828
+  },
+  "envelope": {
+    "schema_version": 1,
+    "session_id": "pan2-w-3",
+    "epoch": 0,
+    "sequence": 0,
+    "chunk": {
+      "frames": [
+        {
+          "transport": "pan2-media",
+          "locator": "pan2-w-3/e0-s0/clip.mp4",
+          "content_hash": "sha256:aa83ca55150c00323f0d431934359f253bfcc8573c94da144263ba29fc18702c",
+          "byte_length": 455591,
+          "media_type": "video/mp4"
+        },
+        {
+          "transport": "pan2-media",
+          "locator": "pan2-w-3/e0-s0/caption.json",
+          "content_hash": "sha256:4b185bc4a3df40c8b0141a266015cda823b4a511140b522c1489e5fb09ccebeb",
+          "byte_length": 1828,
+          "media_type": "application/json"
+        },
+        {
+          "transport": "pan2-media",
+          "locator": "pan2-w-3/e0-s0/generation.json",
+          "content_hash": "sha256:985922a6f59e662c09e466b221dc74776453db0ca55f370b45257e3525f8e186",
+          "byte_length": 94,
+          "media_type": "application/json"
+        }
+      ],
+      "provenance": {
+        "provider": "pan2-worker",
+        "model": "IFM/PAN2",
+        "checkpoint": "a7936f7bea20ec3b9de809583712b40693071819",
+        "runtime_version": "ifm-ai/PAN2@0fb907b6e16a82ead6d691d1de2eef6299c71e9a",
+        "source_snapshot_hash": "sha256:rulab-authored-robotics-v1",
+        "source_stream_epoch": 1,
+        "prompt_action_hash": "worldgraph:80f75e058a214d2b:f3d5620c15cd016d",
+        "generation_seed": 123,
+        "generation_sequence": 0,
+        "simulated": true,
+        "confidence": 0.0,
+        "privacy": {
+          "projection_id": "rulab-public-demo",
+          "hosted_processing_approved": true,
+          "redactions_applied": 0,
+          "retention": "policy_bound"
+        },
+        "license": {
+          "license_id": "Apache-2.0",
+          "usage": "production",
+          "redistribution_allowed": true,
+          "attribution_required": true,
+          "notice": "PAN 2 (MBZUAI IFM) is Apache-2.0; retain its NOTICE and the Qwen3.5 and Wan 2.2 component licenses"
+        }
+      }
+    }
+  },
+  "generation": {
+    "hardware": "NVIDIA H200 NVL",
+    "steps": 50,
+    "seconds": 534.4,
+    "peakVramGb": 86.2
+  }
+}

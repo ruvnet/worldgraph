@@ -67,6 +67,10 @@ pub enum ExternalModelKind {
     LingBotWorldV2,
     /// Wan2.2 external worker using separately provisioned weights.
     Wan22,
+    /// PAN 2 (MBZUAI IFM) external worker (ADR-207). Apache-2.0 weights; the
+    /// worker may run next to local weights or on a remote GPU host, in which
+    /// case it is a hosted processor and needs per-seed approval.
+    Pan2,
 }
 
 impl ExternalModelKind {
@@ -90,6 +94,12 @@ impl ExternalModelKind {
                 ),
             },
             Self::Wan22 => LicensePolicy::apache_2_0(),
+            Self::Pan2 => LicensePolicy {
+                notice: Some(
+                    "PAN 2 (MBZUAI IFM) is Apache-2.0; retain its NOTICE and the Qwen3.5 and Wan 2.2 component licenses".into(),
+                ),
+                ..LicensePolicy::apache_2_0()
+            },
         }
     }
 }
@@ -182,6 +192,35 @@ impl ExternalModelConfig {
                     return Err(WorldModelError::InvalidInput(
                         "local weight providers do not accept a hosted credential setting".into(),
                     ));
+                }
+            }
+            ExternalModelKind::Pan2 => {
+                if self.credential_env.is_some() {
+                    return Err(WorldModelError::InvalidInput(
+                        "PAN 2 workers do not accept a hosted credential setting".into(),
+                    ));
+                }
+                match (sidecar.hosted, self.weights_path.as_ref()) {
+                    // Remote GPU host: weights live with the worker, and every
+                    // seed must carry hosted-processing approval (ADR-204 §5).
+                    (true, None) => {}
+                    (true, Some(_)) => {
+                        return Err(WorldModelError::InvalidInput(
+                            "a hosted PAN 2 worker owns its weights; do not set a local weights path".into(),
+                        ));
+                    }
+                    (false, None) => {
+                        return Err(WorldModelError::InvalidInput(
+                            "a local PAN 2 worker requires an explicit weights path".into(),
+                        ));
+                    }
+                    (false, Some(path)) if !path.exists() => {
+                        return Err(WorldModelError::InvalidInput(format!(
+                            "configured weights path `{}` does not exist",
+                            path.display()
+                        )));
+                    }
+                    (false, Some(_)) => {}
                 }
             }
         }

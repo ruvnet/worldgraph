@@ -1,0 +1,18 @@
+{
+  "format": "worldgraph.simulated.index",
+  "version": 1,
+  "rollouts": [
+    {
+      "id": "pan2-rf-door",
+      "path": "pan2-rf-door/rollout.json"
+    },
+    {
+      "id": "pan2-rover-aisle",
+      "path": "pan2-rover-aisle/rollout.json"
+    },
+    {
+      "id": "synthetic-example",
+      "path": "synthetic-example/rollout.json"
+    }
+  ]
+}

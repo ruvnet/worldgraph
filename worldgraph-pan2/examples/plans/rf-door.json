@@ -1,0 +1,30 @@
+{
+  "name": "RF door opens",
+  "source_snapshot_hash": "sha256:rulab-authored-robotics-v1",
+  "source_stream_epoch": 1,
+  "generation_seed": 123,
+  "projection_id": "rulab-public-demo",
+  "hosted_processing_approved": true,
+  "duration_sec": 5,
+  "first_frame": "A clean, modern robotics research lab seen from just inside its entrance. Pale concrete floor, white walls, and a ceiling of exposed cable trays with linear LED fixtures. In the far wall stands a closed grey steel shielded door with a recessed handle and a small amber status light beside it. Nobody is in the room.",
+  "scene": [
+    { "kind": "box", "center_m": [-2.4, 1.5, 0.45], "size_m": [1.8, 0.9, 0.8], "class": "steel_workbench" },
+    { "kind": "box", "center_m": [2.2, 2.0, 0.6], "size_m": [0.8, 1.2, 0.7], "class": "equipment_rack" },
+    { "kind": "box", "center_m": [0.0, 5.0, 1.05], "size_m": [1.1, 2.1, 0.1], "class": "shielded_door" }
+  ],
+  "lighting": "Cool, even overhead LED light with soft floor reflections; the amber status light gives a small warm accent.",
+  "view": "Eye-level view from just inside the entrance, looking straight down the room toward the shielded door in the far wall.",
+  "subjects": [
+    { "name": "Shielded door", "attribute": "Grey steel RF-shielded door, hinged on its left edge, with a recessed handle." }
+  ],
+  "events": [
+    { "until_sec": 1, "description": "The room is still and the door is closed while the view holds." },
+    { "until_sec": 5, "description": "The door unlatches and swings inward on its left hinges until it stands fully open, revealing a darker corridor beyond; the status light turns from amber to green as it opens." }
+  ],
+  "actions": [
+    { "from_sec": 1, "to_sec": 4.5, "subject": 1, "action": "unlatches and swings inward on its left hinges until it stands fully open." }
+  ],
+  "camera": [
+    { "at_sec": 1, "translation": [0, 0.4, 0] }
+  ]
+}

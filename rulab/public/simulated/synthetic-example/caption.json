@@ -1,0 +1,17 @@
+{
+  "schema": "worldgraph.simulated.caption.fixture.v1",
+  "note": "Synthetic fixture. No world model was prompted; this file stands in for the structured prompt of a real rollout.",
+  "generator": {
+    "tool": "ffmpeg",
+    "source": "lavfi testsrc2",
+    "codec": "libvpx-vp9"
+  },
+  "scene": {
+    "description": "Moving colour bars and a frame counter.",
+    "width": 320,
+    "height": 180,
+    "fps": 24,
+    "durationSec": 2
+  },
+  "actions": []
+}

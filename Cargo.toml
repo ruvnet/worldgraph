@@ -6,6 +6,7 @@ members = [
     "wifi-densepose-worldmodel",
     "worldgraph-wasm",
     "worldgraph-stream",
+    "worldgraph-pan2",
 ]
 
 # Shared package metadata inherited by each member via `<field>.workspace = true`.

@@ -1,0 +1,47 @@
+[package]
+name = "worldgraph-pan2"
+description = "ADR-207 — PAN 2 world-model provider for worldgraph: scene-to-caption compiler, GPU-side sidecar worker, verified rollout bundles, and Cognitum Spaces event projection"
+readme = "README.md"
+version = "0.1.0"
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[features]
+default = []
+# HTTPS client for publishing rollout events to the Cognitum Spaces API.
+spaces-http = ["dep:reqwest"]
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+thiserror.workspace = true
+sha2 = "0.10"
+tokio = { version = "1", features = ["net", "io-util", "macros", "rt-multi-thread", "time", "process", "fs", "signal", "sync"] }
+wifi-densepose-worldmodel = { version = "0.4.0", path = "../wifi-densepose-worldmodel" }
+wifi-densepose-worldgraph = { version = "0.3.2", path = "../wifi-densepose-worldgraph" }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"], optional = true }
+
+[dev-dependencies]
+criterion = { version = "0.5", default-features = false, features = ["cargo_bench_support"] }
+
+[[bin]]
+name = "pan2-worker"
+path = "src/bin/pan2_worker.rs"
+
+[[bin]]
+name = "pan2-rollout"
+path = "src/bin/pan2_rollout.rs"
+
+[[bench]]
+name = "caption"
+harness = false
+
+[[bench]]
+name = "sidecar"
+harness = false
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
