@@ -120,6 +120,11 @@ test('real CLI stdio produces only protocol JSON and package version is independ
   const version = spawnSync(process.execPath, ['bin/cli.js', '--version'], { cwd: PACKAGE_ROOT, encoding: 'utf8' });
   assert.equal(version.stdout.trim(), PACKAGE_VERSION);
 });
+test('real CLI reports input errors as one line without a stack trace', () => {
+  const child = spawnSync(process.execPath, ['bin/cli.js', 'rulab', 'verify', '--not-an-option'], { cwd: PACKAGE_ROOT, encoding: 'utf8', timeout: 10_000 });
+  assert.equal(child.status, 1);
+  assert.equal(child.stderr.trim(), 'worldgraph: Unknown or incomplete option: --not-an-option');
+});
 test('verification refuses installed packages and arbitrary command options', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'worldgraph-installed-'));
   try {

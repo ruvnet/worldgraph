@@ -44,7 +44,7 @@ node bin/cli.js rulab verify
 
 The harness writes gate logs, source identity and SHA256 evidence under `.artifacts/rulab/`. Every required gate must pass. `--without-browser` records a skipped browser gate and cannot produce an overall pass. CI uses Chromium with ANGLE/SwiftShader for actual WebGL2 execution; those measurements are **software rendering evidence**, not physical GPU performance claims. GitHub Pages publishes only after validation on `main`.
 
-The new read only MCP tools are available from a source checkout with `node bin/cli.js mcp start`. They create mission and validation plans and check evidence structure; they do not run arbitrary shell commands or independently verify caller supplied claims. Published npm version 0.1.3 predates these additions.
+The read only MCP tools ship in the npm package from version 0.1.4 (`npx worldgraphs mcp start`), and run from a source checkout with `node bin/cli.js mcp start`. They create mission and validation plans and check evidence structure; they do not run arbitrary shell commands or independently verify caller supplied claims.
 
 The existing authenticated live stream remains available through [the Docker browser demo](demo/web/README.md) and [self hosting instructions](deploy/README.md).
 
@@ -56,8 +56,25 @@ The existing authenticated live stream remains available through [the Docker bro
 
 A focused coding harness (architect / implementer / reviewer / test-writer) that drops into your AI host and helps you design, build, review, and test digital-twin code.
 
+![worldgraphs agent pipeline: architect, implementer, reviewer and test-writer working over the worldgraph graph](https://raw.githubusercontent.com/ruvnet/worldgraph/main/docs/assets/worldgraphs-pipeline.svg)
+
+**Quickstart** (Node 20 or newer):
+
 ```bash
-npx worldgraphs init       # wire the agents into your AI host (Claude Code, Codex, Copilot, …)
+npx worldgraphs doctor
+# PASS kernel loads
+# PASS kernel reports a version
+# PASS kernel backend is native|wasm|js
+# PASS host adapter has a name
+#
+# worldgraph: all checks passed (kernel 0.1.0, wasm backend, host claude-code)
+
+npx worldgraphs --version   # 0.1.4
+npx worldgraphs --help      # init, doctor, mcp start, rulab verify
+```
+
+```bash
+npx worldgraphs init       # boot the metaharness kernel and host adapter, report status
 npx worldgraphs doctor     # health check
 
 # or install globally:

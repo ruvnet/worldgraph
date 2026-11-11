@@ -1,7 +1,16 @@
 {
   "name": "worldgraphs",
-  "version": "0.1.3",
-  "description": "AI coding agent for building digital twins with worldgraph \u2014 architect, implement, review, and test the Rust spatial/sensor-graph crates",
+  "version": "0.1.4",
+  "description": "AI coding agent for building digital twins with worldgraph — architect, implement, review, and test the Rust spatial/sensor-graph crates",
+  "homepage": "https://ruv.io",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ruvnet/worldgraph.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ruvnet/worldgraph/issues"
+  },
+  "license": "MIT OR Apache-2.0",
   "type": "module",
   "bin": {
     "worldgraphs": "bin/cli.js",
@@ -9,6 +18,7 @@
   },
   "files": [
     "bin/**",
+    "!bin/*.test.js",
     "dist/**",
     "src/**",
     ".harness/**",
@@ -42,16 +52,16 @@
     "rulab:verify": "node bin/cli.js rulab verify"
   },
   "dependencies": {
-    "@metaharness/kernel": "^0.1.0",
-    "@metaharness/host-claude-code": "^0.1.1",
-    "@metaharness/host-codex": "^0.1.1",
-    "@metaharness/host-pi-dev": "^0.1.1",
-    "@metaharness/host-hermes": "^0.1.1",
-    "@metaharness/host-openclaw": "^0.1.1",
-    "@metaharness/host-rvm": "^0.1.1",
-    "@metaharness/host-copilot": "^0.1.1",
-    "@metaharness/host-opencode": "^0.1.1",
-    "@metaharness/host-github-actions": "^0.1.1"
+    "@metaharness/kernel": "0.1.8",
+    "@metaharness/host-claude-code": "0.1.4",
+    "@metaharness/host-codex": "0.1.4",
+    "@metaharness/host-pi-dev": "0.1.4",
+    "@metaharness/host-hermes": "0.1.5",
+    "@metaharness/host-openclaw": "0.1.5",
+    "@metaharness/host-rvm": "0.1.5",
+    "@metaharness/host-copilot": "0.1.4",
+    "@metaharness/host-opencode": "0.1.4",
+    "@metaharness/host-github-actions": "0.1.5"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

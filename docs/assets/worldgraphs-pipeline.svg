@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 200" width="760" height="200" role="img" aria-labelledby="t d">
+  <title id="t">worldgraphs agent pipeline</title>
+  <desc id="d">A change moves through four agents in order: architect, implementer, reviewer and test-writer, on top of the worldgraph Rust graph of rooms, sensors, people and beliefs.</desc>
+  <style>
+    .bg { fill: #0f172a; }
+    .box { fill: #1e293b; stroke: #38bdf8; stroke-width: 2; }
+    .lbl { fill: #e2e8f0; font: 600 15px ui-sans-serif, system-ui, sans-serif; text-anchor: middle; }
+    .sub { fill: #94a3b8; font: 12px ui-sans-serif, system-ui, sans-serif; text-anchor: middle; }
+    .ttl { fill: #f8fafc; font: 700 16px ui-sans-serif, system-ui, sans-serif; }
+    .wire { stroke: #475569; stroke-width: 2; fill: none; }
+    .flow { stroke: #38bdf8; stroke-width: 2; fill: none; stroke-dasharray: 6 10; animation: dash 1.2s linear infinite; }
+    .node { fill: #22c55e; }
+    .pulse { animation: pulse 4s ease-in-out infinite; }
+    .p1 { animation-delay: 0s; } .p2 { animation-delay: 1s; } .p3 { animation-delay: 2s; } .p4 { animation-delay: 3s; }
+    @keyframes dash { to { stroke-dashoffset: -32; } }
+    @keyframes pulse { 0%, 30%, 100% { stroke: #38bdf8; fill: #1e293b; } 10%, 20% { stroke: #f59e0b; fill: #422006; } }
+    @media (prefers-reduced-motion: reduce) { .flow, .pulse, .dot { animation: none; } }
+  </style>
+  <rect class="bg" width="760" height="200" rx="14"/>
+  <text class="ttl" x="24" y="32">npx worldgraphs: architect → implement → review → test</text>
+
+  <path class="wire" d="M175 95 H205 M355 95 H385 M535 95 H565"/>
+  <path class="flow" d="M175 95 H205 M355 95 H385 M535 95 H565"/>
+
+  <rect class="box pulse p1" x="25" y="62" width="150" height="66" rx="10"/>
+  <text class="lbl" x="100" y="92">architect</text><text class="sub" x="100" y="112">plans the change</text>
+  <rect class="box pulse p2" x="205" y="62" width="150" height="66" rx="10"/>
+  <text class="lbl" x="280" y="92">implementer</text><text class="sub" x="280" y="112">writes the code</text>
+  <rect class="box pulse p3" x="385" y="62" width="150" height="66" rx="10"/>
+  <text class="lbl" x="460" y="92">reviewer</text><text class="sub" x="460" y="112">hunts bugs in the diff</text>
+  <rect class="box pulse p4" x="565" y="62" width="170" height="66" rx="10"/>
+  <text class="lbl" x="650" y="92">test-writer</text><text class="sub" x="650" y="112">adds missing tests</text>
+
+  <g transform="translate(0 150)">
+    <text class="sub" x="24" y="22" style="text-anchor:start">worldgraph graph:</text>
+    <path class="wire" d="M150 18 H250 M266 18 H366 M382 18 H482 M498 18 H598"/>
+    <circle class="node" cx="142" cy="18" r="7"/><text class="sub" x="142" y="40">room</text>
+    <circle class="node" cx="258" cy="18" r="7"/><text class="sub" x="258" y="40">sensor</text>
+    <circle class="node" cx="374" cy="18" r="7"/><text class="sub" x="374" y="40">person</text>
+    <circle class="node" cx="490" cy="18" r="7"/><text class="sub" x="490" y="40">belief</text>
+    <circle class="node" cx="606" cy="18" r="7"/><text class="sub" x="606" y="40">forecast</text>
+    <circle class="dot" r="4" fill="#f59e0b">
+      <animateMotion dur="4s" repeatCount="indefinite" path="M142 18 H606"/>
+    </circle>
+  </g>
+</svg>
