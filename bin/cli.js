@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 // WorldGraph harness CLI. Published npm package: worldgraphs; both bin aliases work.
 
-import { PACKAGE_VERSION, verifyRuLab } from './rulab-harness.js';
+import { InputError, PACKAGE_VERSION, verifyRuLab } from './rulab-harness.js';
 import { startMcp } from './mcp-server.js';
 
 async function loadHost() {
@@ -101,7 +101,8 @@ if (invokedDirectly) {
   run(argv.slice(2))
     .then((code) => process.exit(code))
     .catch((err) => {
-      console.error(err);
+      // Expected input problems get a one-line message; anything else keeps its stack.
+      console.error(err instanceof InputError ? `worldgraph: ${err.message}` : err);
       process.exit(1);
     });
 }
