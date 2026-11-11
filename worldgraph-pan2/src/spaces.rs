@@ -280,7 +280,11 @@ fn media_locator_error(locator: &str) -> Option<&'static str> {
     if locator.contains(['?', '#']) {
         return Some("attributes.mediaLocator must not carry a query or fragment");
     }
-    if locator.len() > 8 && locator[..8].eq_ignore_ascii_case("https://") {
+    // `get` never slices inside a multi-byte character, unlike `locator[..8]`.
+    if locator
+        .get(..8)
+        .is_some_and(|prefix| prefix.eq_ignore_ascii_case("https://"))
+    {
         let authority = locator[8..].split('/').next().unwrap_or("");
         if authority.contains('@') {
             return Some("attributes.mediaLocator must not carry credentials");
@@ -548,6 +552,14 @@ mod tests {
             .unwrap_err()
             .to_string()
             .contains("edge-only"));
+        // A multi-byte character straddling the 8-byte prefix must be rejected, not panic.
+        for odd in ["clips/aé.mp4", "ééééé", "abcdefgé", "https://"] {
+            let mut body = valid();
+            body["attributes"]["mediaLocator"] = json!(odd);
+            assert!(validate_simulation(&body).is_err(), "{odd}");
+        }
+        // A non-ASCII host is a valid URL (the server's `new URL` accepts it); it just must not panic.
+        let _ = media_locator_error("https://é");
         for good in ["a.mp4", "clips/a.mp4", "https://media.example.com/a/b.mp4"] {
             let mut body = valid();
             body["attributes"]["mediaLocator"] = json!(good);

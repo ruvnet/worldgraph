@@ -83,7 +83,10 @@ pub struct SpacesSnapshot {
     pub events: Vec<SpacesRecord>,
     /// `snapshotHash` the Spaces API returned, verified against `data` when this
     /// snapshot was read from an API response. When set it is the plan's source hash.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    ///
+    /// Never read from or written to a file: only the API-response path may set it, after
+    /// recomputing the hash, so a local file cannot assert a verified hash it does not have.
+    #[serde(skip)]
     pub source_hash: Option<String>,
 }
 
@@ -572,5 +575,22 @@ mod tests {
         let snapshot = SpacesSnapshot::from_json(&serde_json::to_vec(&response).unwrap()).unwrap();
         assert!(snapshot.events.is_empty());
         assert!(snapshot.to_plan(&options()).is_err());
+    }
+
+    #[test]
+    fn a_local_snapshot_file_cannot_assert_a_verified_hash() {
+        let mut file: Value =
+            serde_json::from_slice(include_bytes!("../examples/spaces/warehouse-amr.json"))
+                .unwrap();
+        let forged = format!("sha256:{}", "0".repeat(64));
+        file["source_hash"] = forged.clone().into();
+        file["sourceHash"] = forged.clone().into();
+        let snapshot = SpacesSnapshot::from_json(&serde_json::to_vec(&file).unwrap()).unwrap();
+        assert!(snapshot.source_hash.is_none());
+        assert_ne!(snapshot.hash().unwrap(), forged);
+        assert_ne!(
+            snapshot.to_plan(&options()).unwrap().source_snapshot_hash,
+            forged
+        );
     }
 }

@@ -35,7 +35,7 @@ At the listed rate, 2,374 s is about $2.70 of GPU time per 20 s clip. Timings fo
 
 ## Software checks
 
-- `cargo test -p worldgraph-pan2 --all-features`: 36 tests pass (28 unit, 1 doc, 7 end-to-end over a real Unix socket with the renderer faked). `clippy -D warnings` and `cargo fmt --check` are clean.
+- `cargo test -p worldgraph-pan2 --all-features`: 37 tests pass (29 library unit tests, 1 in the `pan2-rollout` binary, 7 end-to-end over a real Unix socket with the renderer faked; no doc tests). `clippy -D warnings` and `cargo fmt --check` are clean.
 - The Rust canonical-JSON hash reproduces, byte for byte, a fixture produced by the TypeScript implementation in the Spaces API (`tests/fixtures/spaces-canonical.json`).
 - Cross-repository run against the Spaces API handler on the Firestore emulator (not production): the handler served a snapshot of a seeded space, `pan2-rollout from-spaces` recomputed and accepted the server's `snapshotHash`, and the plan carried it. A simulation body built by `pan2-rollout accept` from the real warehouse rollout was accepted with 201, stored as simulated with confidence 0, read back with its clip hash intact, replayed on retry, and left the snapshot hash unchanged.
 
