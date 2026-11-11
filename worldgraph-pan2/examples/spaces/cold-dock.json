@@ -1,0 +1,31 @@
+{
+  "format": "cognitum.spaces.snapshot", "version": 1,
+  "site": { "id": "cold-store-north", "name": "Cold store north", "privacy": "P2" },
+  "space": { "id": "freezer-hall", "name": "Freezer hall", "siteId": "cold-store-north", "buildingId": "main", "floorId": "ground", "privacy": "P2",
+    "attributes": {
+      "style": "Cinematic film footage shot on an anamorphic lens in one uninterrupted continuous take, with shallow depth of field, soft lens flares, fine film grain and a restrained colour grade.",
+      "description": "A freezer warehouse at minus twenty-two degrees, seen from above a crossing where a main aisle meets a side walkway at the corner of tall pallet racking. Frost coats the steel rack uprights and the shrink-wrapped pallets, and a thin cold mist hangs over the grey concrete floor. A yellow painted pedestrian walkway runs along the side of the racking toward the corner. A convex safety mirror and a small blue warning light, switched off, are mounted high on the rack corner. An orange electric forklift carrying a wrapped pallet is at the far end of the main aisle, and a worker in a bulky insulated orange freezer suit and hood is at the far end of the walkway.",
+      "lighting": "Hard, cold white overhead light with a blue cast, breath-like mist in the air and frost sparkling on the racking; a blue warning light adds a pulse of colour at the corner.",
+      "view": "High three-quarter view from above the corner, looking down on both the main aisle on the left and the side walkway on the right, so the forklift and the worker cannot see each other but the viewer sees both.",
+      "camera": [ {"atSec":0,"zoom":0.2}, {"atSec":6.6,"translation":[0,0,-0.2]}, {"atSec":13.3,"rotation":[0.2,0,0]} ]
+    } },
+  "zones": [
+    { "id": "aisle-a", "name": "main aisle", "siteId": "cold-store-north", "spaceId": "freezer-hall", "attributes": { "centerM": [-3, 10, 0.05], "sizeM": [3.5, 20, 0.1], "class": "main aisle" } },
+    { "id": "walkway-nw", "name": "pedestrian walkway", "siteId": "cold-store-north", "spaceId": "freezer-hall", "attributes": { "centerM": [4, 6, 0.05], "sizeM": [10, 1.2, 0.1], "class": "yellow walkway" } },
+    { "id": "corner-nw", "name": "blind rack corner", "siteId": "cold-store-north", "spaceId": "freezer-hall", "attributes": { "centerM": [0, 6, 4], "sizeM": [2.5, 2.5, 8], "class": "pallet racking corner" } }
+  ],
+  "entities": [
+    { "id": "forklift-2", "name": "Forklift", "entityType": "object", "siteId": "cold-store-north", "spaceId": "freezer-hall", "zoneId": "aisle-a",
+      "attributes": { "appearance": "Orange electric forklift with an enclosed cab, a raised mast and a shrink-wrapped pallet on its forks." } },
+    { "id": "track-17", "name": "Worker", "entityType": "track", "identityMode": "anonymous", "siteId": "cold-store-north", "spaceId": "freezer-hall", "zoneId": "walkway-nw",
+      "attributes": { "appearance": "A warehouse worker seen from above and behind in a bulky insulated orange freezer suit with the hood up and thick gloves." } }
+  ],
+  "events": [
+    { "id": "evt-7001", "eventType": "vehicle.enter", "eventSequence": 7001, "observedAt": "2026-11-10T05:20:04Z", "siteId": "cold-store-north", "spaceId": "freezer-hall", "zoneId": "aisle-a", "confidence": 0.96,
+      "attributes": { "entityId": "forklift-2", "narrative": "The forklift drives down the main aisle toward the corner while the worker walks along the yellow walkway toward the same corner from the other side; the racking hides them from each other.", "action": "drives down the main aisle toward the rack corner." } },
+    { "id": "evt-7002", "eventType": "conflict.predicted", "eventSequence": 7002, "observedAt": "2026-11-10T05:20:09Z", "siteId": "cold-store-north", "spaceId": "freezer-hall", "zoneId": "corner-nw", "confidence": 0.91,
+      "attributes": { "entityId": "forklift-2", "narrative": "The blue warning light on the rack corner starts to flash; the forklift brakes and comes to a complete stop well short of the corner, and the worker also stops at the edge of the walkway.", "action": "brakes and comes to a complete stop well short of the corner." } },
+    { "id": "evt-7003", "eventType": "outcome.confirmed", "eventSequence": 7003, "observedAt": "2026-11-10T05:20:18Z", "siteId": "cold-store-north", "spaceId": "freezer-hall", "zoneId": "walkway-nw", "confidence": 0.94,
+      "attributes": { "entityId": "track-17", "narrative": "The worker walks calmly across in front of the stopped forklift and continues along the walkway; the blue light stops flashing and the forklift stays where it is.", "action": "walks calmly across in front of the stopped forklift and continues along the walkway." } }
+  ]
+}

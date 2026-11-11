@@ -1,0 +1,30 @@
+{
+  "format": "cognitum.spaces.snapshot", "version": 1,
+  "site": { "id": "domaine-des-combes", "name": "Domaine des Combes", "privacy": "P2" },
+  "space": { "id": "lower-vineyard", "name": "Lower vineyard", "siteId": "domaine-des-combes", "buildingId": "estate", "floorId": "ground", "privacy": "P2",
+    "attributes": {
+      "style": "Cinematic film footage shot on an anamorphic lens in one uninterrupted continuous take, with shallow depth of field, soft lens flares, fine film grain and a restrained colour grade.",
+      "description": "A sloping vineyard in early spring, an hour before dawn, seen from the top of the slope. Long straight rows of bare trellised vines run downhill into a shallow hollow where a low blanket of cold mist has pooled. Unlit metal frost candles stand in a line along every row. A tall white wind machine with a two-blade propeller stands motionless at the edge of the hollow. The sky is deep blue with a thin band of pale light on the horizon, and white frost glints on the grass. Nobody is in the vineyard.",
+      "lighting": "Cold blue pre-dawn light with a faint pale glow on the horizon; later the scene is warmed by hundreds of small orange flames that glow through the mist.",
+      "view": "Wide view from the top of the slope at shoulder height, looking down the vine rows into the misty hollow, with the wind machine on the right.",
+      "camera": [ {"atSec":0,"translation":[0,0.2,0]}, {"atSec":6.6,"rotation":[0,-0.2,0]}, {"atSec":13.3,"translation":[0,0.3,0.2]} ]
+    } },
+  "zones": [
+    { "id": "B1", "name": "hillside block", "siteId": "domaine-des-combes", "spaceId": "lower-vineyard", "attributes": { "centerM": [-20, 20, 1], "sizeM": [30, 30, 2], "class": "hillside vine rows" } },
+    { "id": "B5", "name": "middle rows block", "siteId": "domaine-des-combes", "spaceId": "lower-vineyard", "attributes": { "centerM": [0, 60, 1], "sizeM": [30, 30, 2], "class": "vine rows" } },
+    { "id": "B8", "name": "hollow block", "siteId": "domaine-des-combes", "spaceId": "lower-vineyard", "attributes": { "centerM": [0, 100, 1], "sizeM": [40, 30, 2], "class": "misty hollow" } }
+  ],
+  "entities": [
+    { "id": "wind-machine-1", "name": "Wind machine", "entityType": "object", "siteId": "domaine-des-combes", "spaceId": "lower-vineyard", "zoneId": "B8",
+      "attributes": { "appearance": "Tall white steel frost-protection wind machine with a two-blade propeller on top of a slim tower.", "centerM": [25, 90, 5], "sizeM": [2, 2, 10], "class": "wind machine" } },
+    { "id": "probe-b8", "name": "Canopy temperature probe", "entityType": "sensor", "siteId": "domaine-des-combes", "spaceId": "lower-vineyard", "zoneId": "B8", "attributes": {} }
+  ],
+  "events": [
+    { "id": "evt-3101", "eventType": "temperature.crossed", "eventSequence": 3101, "observedAt": "2026-04-18T03:42:00Z", "siteId": "domaine-des-combes", "spaceId": "lower-vineyard", "zoneId": "B8", "confidence": 0.97,
+      "attributes": { "narrative": "The cold mist thickens and creeps slowly up the lowest vine rows out of the hollow while frost whitens the ground; everything else is still." } },
+    { "id": "evt-3102", "eventType": "wind_machine.running", "eventSequence": 3102, "observedAt": "2026-04-18T03:44:00Z", "siteId": "domaine-des-combes", "spaceId": "lower-vineyard", "zoneId": "B8", "confidence": 0.99,
+      "attributes": { "entityId": "wind-machine-1", "narrative": "The propeller of the wind machine begins to turn and spins up to a steady speed, and the mist near it starts to swirl and thin.", "action": "starts its propeller and spins it up to a steady speed." } },
+    { "id": "evt-3103", "eventType": "candles.lit", "eventSequence": 3103, "observedAt": "2026-04-18T03:51:00Z", "siteId": "domaine-des-combes", "spaceId": "lower-vineyard", "zoneId": "B8", "confidence": 0.95,
+      "attributes": { "narrative": "Frost candles ignite one after another along the rows, starting in the hollow and spreading up the slope, until hundreds of small orange flames glow through the mist under the brightening sky." } }
+  ]
+}

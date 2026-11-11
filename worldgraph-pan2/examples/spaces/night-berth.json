@@ -1,0 +1,32 @@
+{
+  "format": "cognitum.spaces.snapshot", "version": 1,
+  "site": { "id": "north-quay-terminal", "name": "North Quay container terminal", "privacy": "P2" },
+  "space": { "id": "berth-2", "name": "Berth 2 apron", "siteId": "north-quay-terminal", "buildingId": "quay", "floorId": "apron", "privacy": "P2",
+    "attributes": {
+      "style": "Cinematic film footage shot on an anamorphic lens in one uninterrupted continuous take, with shallow depth of field, soft lens flares, fine film grain and a restrained colour grade.",
+      "description": "A container terminal quay at night in thick fog, seen from apron level. Painted traffic lanes run along the wet concrete away from the viewer. A flat driverless yellow container carrier loaded with a single blue shipping container is driving down the middle lane. Beyond it a huge ship-to-shore quay crane towers into the fog, its floodlights making bright cones in the mist, beside the dark hull of a moored container ship. Stacks of coloured containers line the left side. Nobody is on the apron.",
+      "lighting": "Night, with dense fog lit by sodium-orange floodlights and cold white crane lights; wet concrete throws long reflections and distant lights bloom softly in the mist.",
+      "view": "Low wide view from apron level at the near end of the lanes, looking along them toward the quay crane and the ship.",
+      "camera": [ {"atSec":0,"translation":[0,0.3,0]}, {"atSec":6.6,"translation":[0.3,0,0]}, {"atSec":13.3,"rotation":[0,0.3,0]} ]
+    } },
+  "zones": [
+    { "id": "L3", "name": "lane 3", "siteId": "north-quay-terminal", "spaceId": "berth-2", "attributes": { "centerM": [0, 30, 0.1], "sizeM": [4, 60, 0.2], "class": "traffic lane" } },
+    { "id": "L4", "name": "lane 4", "siteId": "north-quay-terminal", "spaceId": "berth-2", "attributes": { "centerM": [5, 30, 0.1], "sizeM": [4, 60, 0.2], "class": "traffic lane" } },
+    { "id": "QC2", "name": "quay crane 2", "siteId": "north-quay-terminal", "spaceId": "berth-2", "attributes": { "centerM": [6, 70, 25], "sizeM": [25, 15, 50], "class": "quay crane" } },
+    { "id": "C-14", "name": "yard block C-14", "siteId": "north-quay-terminal", "spaceId": "berth-2", "attributes": { "centerM": [-18, 40, 4], "sizeM": [12, 40, 8], "class": "container stacks" } }
+  ],
+  "entities": [
+    { "id": "V03", "name": "Carrier V03", "entityType": "object", "siteId": "north-quay-terminal", "spaceId": "berth-2", "zoneId": "L3",
+      "attributes": { "appearance": "Flat driverless yellow container carrier with eight wheels, carrying one blue shipping container, with amber beacon lights at its corners." } },
+    { "id": "V05", "name": "Carrier V05", "entityType": "object", "siteId": "north-quay-terminal", "spaceId": "berth-2", "zoneId": "L3",
+      "attributes": { "appearance": "Flat driverless yellow container carrier with eight wheels, carrying one red shipping container, with white headlights." } }
+  ],
+  "events": [
+    { "id": "evt-0031", "eventType": "vehicle.fault", "eventSequence": 31, "observedAt": "2026-11-10T02:14:10Z", "siteId": "north-quay-terminal", "spaceId": "berth-2", "zoneId": "L3", "confidence": 0.98,
+      "attributes": { "entityId": "V03", "narrative": "The yellow carrier with the blue container slows and comes to a stop in the middle lane, and its amber beacon lights begin to flash in the fog.", "action": "slows to a stop in the middle lane and starts flashing its amber beacons." } },
+    { "id": "evt-0032", "eventType": "fleet.route-changed", "eventSequence": 32, "observedAt": "2026-11-10T02:14:30Z", "siteId": "north-quay-terminal", "spaceId": "berth-2", "zoneId": "L4", "confidence": 0.96,
+      "attributes": { "entityId": "V05", "narrative": "A second carrier with a red container comes up from behind, steers smoothly into the next lane to the right, and drives past the stopped carrier toward the crane.", "action": "steers into the next lane to the right and drives past the stopped carrier toward the crane." } },
+    { "id": "evt-0033", "eventType": "crane.lift-started", "eventSequence": 33, "observedAt": "2026-11-10T02:15:00Z", "siteId": "north-quay-terminal", "spaceId": "berth-2", "zoneId": "QC2", "confidence": 0.97,
+      "attributes": { "narrative": "High in the fog the quay crane lowers its spreader, picks a container up and lifts it slowly toward the ship, while the stopped carrier keeps flashing below." } }
+  ]
+}

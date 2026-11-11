@@ -1,0 +1,30 @@
+{
+  "format": "cognitum.spaces.snapshot", "version": 1,
+  "site": { "id": "dc-east", "name": "DC-East", "privacy": "P2" },
+  "space": { "id": "hall-b-pod-3", "name": "Hall B pod 3", "siteId": "dc-east", "buildingId": "hall-b", "floorId": "l1", "privacy": "P2",
+    "attributes": {
+      "style": "Cinematic film footage shot on an anamorphic lens in one uninterrupted continuous take, with shallow depth of field, soft lens flares, fine film grain and a restrained colour grade.",
+      "description": "A data hall at three in the morning, seen from the end of an aisle between two long rows of tall black server racks. Thousands of small blue and green status lights blink on the rack fronts and reflect in the glossy white raised floor. At the far end of the aisle a large grey cooling unit is built into the wall, with a round fan grille and a steady green indicator light. Cable trays run overhead. The room is dim and nobody is present.",
+      "lighting": "Dim, cool blue light from rack status lights and floor reflections; later a red warning glow from the cooling unit and amber rack lights spread down the aisle.",
+      "view": "Symmetrical view at chest height from the near end of the aisle, looking straight down it toward the cooling unit in the far wall.",
+      "camera": [ {"atSec":0,"translation":[0,0.3,0]}, {"atSec":6.6,"translation":[0,0.2,0]}, {"atSec":13.3,"zoom":-0.3} ]
+    } },
+  "zones": [
+    { "id": "pod3.cold-aisle-a", "name": "cold aisle A", "siteId": "dc-east", "spaceId": "hall-b-pod-3", "attributes": { "centerM": [0, 8, 0.05], "sizeM": [1.8, 16, 0.1], "class": "aisle" } },
+    { "id": "pod3.row-a", "name": "rack row A", "siteId": "dc-east", "spaceId": "hall-b-pod-3", "attributes": { "centerM": [-1.5, 8, 1.1], "sizeM": [1.2, 16, 2.2], "class": "server rack row" } },
+    { "id": "pod3.row-b", "name": "rack row B", "siteId": "dc-east", "spaceId": "hall-b-pod-3", "attributes": { "centerM": [1.5, 8, 1.1], "sizeM": [1.2, 16, 2.2], "class": "server rack row" } }
+  ],
+  "entities": [
+    { "id": "crah-3", "name": "Cooling unit", "entityType": "object", "siteId": "dc-east", "spaceId": "hall-b-pod-3", "zoneId": "pod3.cold-aisle-a",
+      "attributes": { "appearance": "Large grey wall-mounted cooling unit with a round fan grille and a single indicator light on its front panel.", "centerM": [0, 16.5, 1.2], "sizeM": [2, 1, 2.4], "class": "cooling unit" } },
+    { "id": "probe-rk-a07", "name": "Rack inlet probe", "entityType": "sensor", "siteId": "dc-east", "spaceId": "hall-b-pod-3", "zoneId": "pod3.row-a", "attributes": {} }
+  ],
+  "events": [
+    { "id": "evt_00001", "eventType": "cooling.unit.alarm", "eventSequence": 1, "observedAt": "2026-11-10T03:00:00Z", "siteId": "dc-east", "spaceId": "hall-b-pod-3", "zoneId": "pod3.cold-aisle-a", "confidence": 0.99,
+      "attributes": { "entityId": "crah-3", "narrative": "The fan behind the grille of the cooling unit slows and stops, and its indicator light changes from green to red and begins to pulse.", "action": "spins its fan down to a stop and switches its indicator light from green to pulsing red." } },
+    { "id": "evt_00002", "eventType": "rack.inlet.rising", "eventSequence": 2, "observedAt": "2026-11-10T03:00:08Z", "siteId": "dc-east", "spaceId": "hall-b-pod-3", "zoneId": "pod3.row-a", "confidence": 0.95,
+      "attributes": { "narrative": "Starting with the racks nearest the cooling unit, the status lights on the rack fronts turn from blue to amber, the change moving rack by rack down the aisle toward the viewer as a faint heat haze shimmers in the air." } },
+    { "id": "evt_00003", "eventType": "rack.inlet.alarm", "eventSequence": 3, "observedAt": "2026-11-10T03:00:20Z", "siteId": "dc-east", "spaceId": "hall-b-pod-3", "zoneId": "pod3.row-a", "confidence": 0.97,
+      "attributes": { "narrative": "The lights on the racks closest to the cooling unit turn red, and a red warning beacon on the ceiling above the aisle starts to rotate, sweeping red light across the racks and the glossy floor." } }
+  ]
+}

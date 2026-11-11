@@ -1,4 +1,5 @@
-//! Cognitum Spaces → rollout plan.
+//! | space | `description`, `lighting`, `view`, `style` | first frame, light, viewpoint, look |
+//! | space | `camera` (`[{atSec, translation, rotation, zoom}]`) | camera moves, as in a plan |Cognitum Spaces → rollout plan.
 //!
 //! Turns the records the Spaces API returns for one space
 //! (`GET /v1/spatial/{sites,spaces,zones,entities,events}`) into a
@@ -21,7 +22,7 @@ use serde_json::Value;
 use wifi_densepose_worldmodel::ScenePrimitive;
 
 use crate::media::sha256_hex;
-use crate::plan::{PlanAction, PlanEvent, PlanSubject, RolloutPlan};
+use crate::plan::{CameraKey, PlanAction, PlanEvent, PlanSubject, RolloutPlan};
 use crate::spaces::is_spaces_id;
 use crate::Pan2Error;
 
@@ -112,6 +113,37 @@ fn vec3(record: &SpacesRecord, key: &str) -> Option<[f32; 3]> {
         *slot = value.as_f64().filter(|v| v.is_finite())? as f32;
     }
     Some(out)
+}
+
+/// Reads the optional `camera` attribute of the space record.
+fn camera(space: &SpacesRecord) -> Result<Vec<CameraKey>, Pan2Error> {
+    let Some(keys) = space.attributes.get("camera") else {
+        return Ok(Vec::new());
+    };
+    let keys = keys
+        .as_array()
+        .ok_or_else(|| Pan2Error::invalid("space `camera` must be an array"))?;
+    keys.iter()
+        .map(|key| {
+            let rate = |name: &str| -> Result<[f32; 3], Pan2Error> {
+                match key.get(name) {
+                    None => Ok([0.0; 3]),
+                    Some(value) => serde_json::from_value(value.clone()).map_err(|_| {
+                        Pan2Error::invalid(format!("camera `{name}` must be three numbers"))
+                    }),
+                }
+            };
+            Ok(CameraKey {
+                at_sec: key
+                    .get("atSec")
+                    .and_then(Value::as_f64)
+                    .ok_or_else(|| Pan2Error::invalid("camera key needs a numeric `atSec`"))?,
+                translation: rate("translation")?,
+                rotation: rate("rotation")?,
+                zoom: key.get("zoom").and_then(Value::as_f64).unwrap_or(0.0) as f32,
+            })
+        })
+        .collect()
 }
 
 fn name(record: &SpacesRecord) -> &str {
@@ -288,13 +320,13 @@ impl SpacesSnapshot {
             duration_sec: f64::from(options.duration_sec),
             first_frame,
             scene,
-            style: None,
+            style: text(&self.space, "style").map(str::to_owned),
             lighting: text(&self.space, "lighting").map(str::to_owned),
             view: text(&self.space, "view").map(str::to_owned),
             subjects,
             events,
             actions,
-            camera: Vec::new(),
+            camera: camera(&self.space)?,
             image: None,
         })
     }
@@ -332,6 +364,50 @@ mod tests {
         let (seed, action) = plan.into_inputs(0, 0).unwrap();
         let compiled = compile(&seed, &action).unwrap();
         assert_eq!(compiled.frames, 481);
+    }
+
+    #[test]
+    fn style_and_camera_moves_come_from_the_space_record() {
+        let snapshot = SpacesSnapshot::from_json(include_bytes!(
+            "../examples/spaces/warehouse-amr-cinematic.json"
+        ))
+        .unwrap();
+        let plan = snapshot.to_plan(&options()).unwrap();
+        assert!(plan.style.as_deref().unwrap().contains("Cinematic"));
+        assert!(plan.camera.len() >= 3);
+        let (seed, action) = plan.into_inputs(0, 0).unwrap();
+        let prompt = compile(&seed, &action).unwrap().prompt;
+        assert!(
+            prompt.contains("dolly_forward") && prompt.contains("track_right"),
+            "{prompt}"
+        );
+
+        let mut bad = snapshot;
+        bad.space.attributes.insert(
+            "camera".into(),
+            serde_json::json!([{ "translation": [0, 1, 0] }]),
+        );
+        assert!(bad.to_plan(&options()).is_err());
+    }
+
+    #[test]
+    fn every_bundled_spaces_example_compiles_to_a_twenty_second_caption() {
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("examples/spaces");
+        let mut seen = 0;
+        for entry in std::fs::read_dir(dir).unwrap() {
+            let path = entry.unwrap().path();
+            let snapshot = SpacesSnapshot::from_json(&std::fs::read(&path).unwrap()).unwrap();
+            let plan = snapshot.to_plan(&options()).unwrap();
+            let (seed, action) = plan.into_inputs(0, 0).unwrap();
+            assert_eq!(
+                compile(&seed, &action).unwrap().frames,
+                481,
+                "{}",
+                path.display()
+            );
+            seen += 1;
+        }
+        assert!(seen >= 7);
     }
 
     #[test]
