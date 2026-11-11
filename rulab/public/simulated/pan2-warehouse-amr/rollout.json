@@ -1,0 +1,84 @@
+{
+  "format": "worldgraph.simulated.rollout",
+  "version": 1,
+  "name": "North distribution centre · Pick hall A",
+  "simulated": true,
+  "media": {
+    "file": "clip.mp4",
+    "sha256": "d4cca9d6ac27d845129effe6ebc8165f65faea2a62bb4f8fb4030fc09b8b0fc0",
+    "bytes": 2678780,
+    "mediaType": "video/mp4",
+    "width": 1248,
+    "height": 704,
+    "fps": 24,
+    "durationSec": 20.0
+  },
+  "caption": {
+    "file": "caption.json",
+    "sha256": "3d614ab86063dd41ef35c7396e625868655814a55260d777888eb8a8ce6d1434",
+    "bytes": 2743
+  },
+  "envelope": {
+    "schema_version": 1,
+    "session_id": "pan2-w-4",
+    "epoch": 0,
+    "sequence": 0,
+    "chunk": {
+      "frames": [
+        {
+          "transport": "pan2-media",
+          "locator": "pan2-w-4/e0-s0/clip.mp4",
+          "content_hash": "sha256:d4cca9d6ac27d845129effe6ebc8165f65faea2a62bb4f8fb4030fc09b8b0fc0",
+          "byte_length": 2678780,
+          "media_type": "video/mp4"
+        },
+        {
+          "transport": "pan2-media",
+          "locator": "pan2-w-4/e0-s0/caption.json",
+          "content_hash": "sha256:3d614ab86063dd41ef35c7396e625868655814a55260d777888eb8a8ce6d1434",
+          "byte_length": 2743,
+          "media_type": "application/json"
+        },
+        {
+          "transport": "pan2-media",
+          "locator": "pan2-w-4/e0-s0/generation.json",
+          "content_hash": "sha256:d524f908904785870145edb51e12295876be8b0a38981bec64381e1292fff11d",
+          "byte_length": 96,
+          "media_type": "application/json"
+        }
+      ],
+      "provenance": {
+        "provider": "pan2-worker",
+        "model": "IFM/PAN2",
+        "checkpoint": "a7936f7bea20ec3b9de809583712b40693071819",
+        "runtime_version": "ifm-ai/PAN2@0fb907b6e16a82ead6d691d1de2eef6299c71e9a",
+        "source_snapshot_hash": "sha256:07a56fbdac6cb8710c36d1a2df315c7f1f1849466b239eb7fd57b3777488d2d0",
+        "source_stream_epoch": 9003,
+        "prompt_action_hash": "worldgraph:590e15ff5d1b13a4:e20df15a37676078",
+        "generation_seed": 123,
+        "generation_sequence": 0,
+        "simulated": true,
+        "confidence": 0.0,
+        "privacy": {
+          "projection_id": "spaces:dc-north:pick-hall-a",
+          "hosted_processing_approved": true,
+          "redactions_applied": 0,
+          "retention": "policy_bound"
+        },
+        "license": {
+          "license_id": "Apache-2.0",
+          "usage": "production",
+          "redistribution_allowed": true,
+          "attribution_required": true,
+          "notice": "PAN 2 (MBZUAI IFM) is Apache-2.0; retain its NOTICE and the Qwen3.5 and Wan 2.2 component licenses"
+        }
+      }
+    }
+  },
+  "generation": {
+    "hardware": "NVIDIA H200 NVL",
+    "steps": 50,
+    "seconds": 2400.6,
+    "peakVramGb": 127.9
+  }
+}

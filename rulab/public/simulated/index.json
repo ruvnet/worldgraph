@@ -13,6 +13,18 @@
     {
       "id": "synthetic-example",
       "path": "synthetic-example/rollout.json"
+    },
+    {
+      "id": "pan2-warehouse-amr",
+      "path": "pan2-warehouse-amr/rollout.json"
+    },
+    {
+      "id": "pan2-office-arrival",
+      "path": "pan2-office-arrival/rollout.json"
+    },
+    {
+      "id": "pan2-frost-line",
+      "path": "pan2-frost-line/rollout.json"
     }
   ]
 }

@@ -75,7 +75,7 @@ A continuous deformation adapter or streamed temporal representation would be a 
 
 ## Validation and deployment boundary
 
-The existing seven harness gates remain unchanged. The artifact collector now additionally requires the five fixed bundled files: `rulab/dist/capture-example/capture.json` and `frame-000.splat` through `frame-003.splat`. Together with HTML, compiled JS/CSS, and the Rust WASM/glue pair, the current build requires ten artifact hashes within the unchanged maximum of sixteen. Collection follows no arbitrary manifest paths and performs no recursive tree scan.
+The existing seven harness gates remain unchanged. The artifact collector now additionally requires the five fixed bundled files: `rulab/dist/capture-example/capture.json` and `frame-000.splat` through `frame-003.splat`. Together with HTML, compiled JS/CSS, and the Rust WASM/glue pair, this ADR's build required ten artifact hashes within the unchanged maximum of sixteen. ADR 207 later added the simulated index and the synthetic example's three files, so a current build records fourteen (counted in `.artifacts/rulab/evidence.json`); the other bundled simulated rollouts are served through the index and are not hashed by the harness. Collection follows no arbitrary manifest paths and performs no recursive tree scan.
 
 `summary.complete` continues to mean all execution gates passed. CLI acceptance additionally requires clean known Git provenance and complete artifact evidence. Missing capture files return nonzero even when all gate exit codes are zero. Harness fixtures isolate this behavior with stubbed gates, real temporary Git checkouts, and real file hashing; fixture output is not evidence that the production browser or Rust pipeline ran.
 
