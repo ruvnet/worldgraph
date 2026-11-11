@@ -9,7 +9,7 @@
 //! | Record | Attribute | Use |
 //! | --- | --- | --- |
 //! | space | `description`, `lighting`, `view` | first frame, light, viewpoint |
-//! | zone, entity | `centerM`, `sizeM` (`[x, y, z]` metres), `class` | layout sentence |
+//! | zone, entity | `placement.centerM`/`sizeM` (ADR-107), else `attributes.centerM`/`sizeM` (`[x, y, z]` metres); `class` | layout sentence |
 //! | entity | `appearance` | makes the entity a tracked subject |
 //! | event | `entityId`, `narrative`, `action` | timed phase and subject action |
 //!
@@ -81,6 +81,10 @@ pub struct SpacesSnapshot {
     /// Events to dramatize.
     #[serde(default)]
     pub events: Vec<SpacesRecord>,
+    /// `snapshotHash` the Spaces API returned, verified against `data` when this
+    /// snapshot was read from an API response. When set it is the plan's source hash.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_hash: Option<String>,
 }
 
 /// Choices that are not in the Spaces data.
@@ -103,8 +107,18 @@ fn text<'a>(record: &'a SpacesRecord, key: &str) -> Option<&'a str> {
         .filter(|s| !s.is_empty())
 }
 
+/// Reads `[x, y, z]` from the validated `placement` field (ADR-107), falling back
+/// to the free-form attribute of the same name used before the API had geometry.
 fn vec3(record: &SpacesRecord, key: &str) -> Option<[f32; 3]> {
-    let values = record.attributes.get(key)?.as_array()?;
+    let from_placement = record
+        .other
+        .get("placement")
+        .and_then(|placement| placement.get(key));
+    triple(from_placement.or_else(|| record.attributes.get(key))?)
+}
+
+fn triple(value: &Value) -> Option<[f32; 3]> {
+    let values = value.as_array()?;
     let mut out = [0.0; 3];
     if values.len() != 3 {
         return None;
@@ -169,18 +183,71 @@ fn words(event_type: &str) -> String {
 
 impl SpacesSnapshot {
     /// Parses a snapshot and checks its header and ids.
+    ///
+    /// Accepts either this crate's `cognitum.spaces.snapshot` file or a
+    /// `GET /v1/spatial/snapshots/{spaceId}` response (ADR-107), whose
+    /// `snapshotHash` is recomputed and must match.
     pub fn from_json(bytes: &[u8]) -> Result<Self, Pan2Error> {
-        let snapshot: Self = serde_json::from_slice(bytes)?;
+        let value: Value = serde_json::from_slice(bytes)?;
+        if value.get("object").and_then(Value::as_str) == Some("snapshot") {
+            return Self::from_api_response(&value);
+        }
+        let snapshot: Self = serde_json::from_value(value)?;
         if snapshot.format != SNAPSHOT_FORMAT || snapshot.version != 1 {
             return Err(Pan2Error::invalid(format!(
                 "expected {SNAPSHOT_FORMAT} version 1"
             )));
         }
-        let records = [&snapshot.site, &snapshot.space].into_iter();
+        snapshot.check_ids()?;
+        Ok(snapshot)
+    }
+
+    fn from_api_response(response: &Value) -> Result<Self, Pan2Error> {
+        let claimed = response
+            .get("snapshotHash")
+            .and_then(Value::as_str)
+            .ok_or_else(|| Pan2Error::invalid("snapshot response has no snapshotHash"))?;
+        let data = response
+            .get("data")
+            .ok_or_else(|| Pan2Error::invalid("snapshot response has no data"))?;
+        // Refuse data the server did not hash: this is what ties a rollout to the exact
+        // records it was built from.
+        if crate::canonical::snapshot_hash(data) != claimed {
+            return Err(Pan2Error::invalid(
+                "snapshotHash does not match the snapshot data",
+            ));
+        }
+        let records = |key: &str| -> Result<Vec<SpacesRecord>, Pan2Error> {
+            match data.get(key) {
+                None | Some(Value::Null) => Ok(Vec::new()),
+                Some(list) => Ok(serde_json::from_value(list.clone())?),
+            }
+        };
+        let one = |key: &str| -> Result<SpacesRecord, Pan2Error> {
+            Ok(serde_json::from_value(data.get(key).cloned().ok_or_else(
+                || Pan2Error::invalid(format!("snapshot data has no `{key}`")),
+            )?)?)
+        };
+        let snapshot = Self {
+            format: SNAPSHOT_FORMAT.into(),
+            version: 1,
+            site: one("site")?,
+            space: one("space")?,
+            zones: records("zones")?,
+            entities: records("entities")?,
+            events: records("events")?,
+            source_hash: Some(claimed.to_owned()),
+        };
+        snapshot.check_ids()?;
+        Ok(snapshot)
+    }
+
+    fn check_ids(&self) -> Result<(), Pan2Error> {
+        let records = [&self.site, &self.space].into_iter();
         for record in records
-            .chain(&snapshot.zones)
-            .chain(&snapshot.entities)
-            .chain(&snapshot.events)
+            .chain(&self.zones)
+            .chain(&self.entities)
+            .chain(&self.events)
         {
             if !is_spaces_id(&record.id) {
                 return Err(Pan2Error::invalid(format!(
@@ -189,11 +256,16 @@ impl SpacesSnapshot {
                 )));
             }
         }
-        Ok(snapshot)
+        Ok(())
     }
 
     /// SHA-256 of the snapshot's canonical JSON, as `sha256:<hex>`.
+    ///
+    /// For a snapshot read from the API this is the server's verified `snapshotHash`.
     pub fn hash(&self) -> Result<String, Pan2Error> {
+        if let Some(hash) = &self.source_hash {
+            return Ok(hash.clone());
+        }
         // serde_json maps are ordered, so re-serializing through Value is canonical.
         let value = serde_json::to_value(self)?;
         Ok(format!(
@@ -439,5 +511,66 @@ mod tests {
         snapshot.events.clear();
         assert!(snapshot.to_plan(&options()).is_err());
         assert!(SpacesSnapshot::from_json(br#"{"format":"x","version":1}"#).is_err());
+    }
+
+    /// A response shaped like `GET /v1/spatial/snapshots/{spaceId}`, hashed the way the server does.
+    fn api_response(mutate: impl FnOnce(&mut Value)) -> Value {
+        let mut data = serde_json::json!({
+            "site": {"id": "site-a", "name": "Plant"},
+            "space": {"id": "space-a", "name": "Aisle", "attributes": {"description": "A long warehouse aisle."}},
+            "zones": [{"id": "zone-a", "name": "Dock", "attributes": {"class": "dock"},
+                "placement": {"frame": "space-local-m", "centerM": [4.0, 6.0, 0.0], "sizeM": [3.0, 2.0, 1.0]}}],
+            "entities": [{"id": "robot-a", "name": "Robot", "entityType": "object",
+                "attributes": {"appearance": "an orange robot", "centerM": [9.0, 9.0, 9.0], "sizeM": [1.0, 1.0, 1.0]},
+                "placement": {"frame": "space-local-m", "centerM": [1.0, 2.0, 0.0], "sizeM": [0.6, 0.8, 1.2]},
+                "physics": {"massKg": 120.0}}],
+            "events": [{"id": "evt-1", "eventType": "robot.undocked", "eventSequence": 1,
+                "attributes": {"entityId": "robot-a"}}],
+        });
+        mutate(&mut data);
+        let hash = crate::canonical::snapshot_hash(&data);
+        serde_json::json!({"object": "snapshot", "schemaVersion": "1.0", "snapshotHash": hash,
+            "asOf": "2026-11-11T00:00:00Z", "eventsStatus": "included", "data": data})
+    }
+
+    #[test]
+    fn an_api_snapshot_response_is_verified_and_prefers_placement() {
+        let response = api_response(|_| {});
+        let snapshot = SpacesSnapshot::from_json(&serde_json::to_vec(&response).unwrap()).unwrap();
+        assert_eq!(snapshot.hash().unwrap(), response["snapshotHash"]);
+        let plan = snapshot.to_plan(&options()).unwrap();
+        assert_eq!(plan.source_snapshot_hash, response["snapshotHash"]);
+        // The entity's placement (1, 2, 0) wins over the stale attribute (9, 9, 9).
+        let boxes: Vec<_> = plan
+            .scene
+            .iter()
+            .map(|primitive| format!("{primitive:?}"))
+            .collect();
+        assert!(
+            boxes.iter().any(|b| b.contains("1.0, 2.0, 0.0")),
+            "{boxes:?}"
+        );
+        assert!(
+            !boxes.iter().any(|b| b.contains("9.0, 9.0, 9.0")),
+            "{boxes:?}"
+        );
+    }
+
+    #[test]
+    fn a_tampered_api_snapshot_is_refused() {
+        let mut response = api_response(|_| {});
+        response["data"]["entities"][0]["name"] = "Someone else".into();
+        let error = SpacesSnapshot::from_json(&serde_json::to_vec(&response).unwrap())
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("does not match"), "{error}");
+    }
+
+    #[test]
+    fn an_api_snapshot_without_events_has_nothing_to_dramatize() {
+        let response = api_response(|data| data["events"] = Value::Null);
+        let snapshot = SpacesSnapshot::from_json(&serde_json::to_vec(&response).unwrap()).unwrap();
+        assert!(snapshot.events.is_empty());
+        assert!(snapshot.to_plan(&options()).is_err());
     }
 }

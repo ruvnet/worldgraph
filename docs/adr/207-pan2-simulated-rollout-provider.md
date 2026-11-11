@@ -15,7 +15,7 @@ Related: [ADR-204](ADR-204-rust-generative-world-model-runtime.md) (provider con
 | Code and weights are Apache-2.0 | `LICENSE` in `ifm-ai/PAN2`; model card of [`IFM/PAN2`](https://huggingface.co/IFM/PAN2) |
 | 29.2B-parameter diffusion transformer, Qwen3.5-9B text encoder, Wan 2.2 VAE | upstream `README.md` |
 | Input is a structured text caption plus an optional first image | upstream `docs/inference.md` |
-| Output is 2D video, 704x1248 at 24 fps, up to 20 s | upstream `README.md` |
+| Output is 2D video, up to 20 s at 24 fps (measured here: 1248 wide by 704 high) | upstream `README.md`; `ffprobe` of the clips produced |
 | One `generate.py` worker per GPU, each holding the whole model | upstream `docs/inference.md` |
 | No hosted inference endpoint is offered by the publisher | not found on `ifm.ai/pan` or in the repository; treated as unconfirmed |
 | "Predictions, not records"; text actions are coarse; appearance drifts across clips | upstream `MODEL_CARD.md` |
@@ -78,15 +78,17 @@ Limits enforced before anything is sent: 1 to 20 seconds, at most one decimal pl
 
 `worldgraph-stream` gains `POST /v1/sim/envelopes`, `GET /v1/sim/envelopes` and `GET /v1/sim/sessions`. They use the same bearer validation as the twin routes, hold a bounded in-memory store, accept descriptors and provenance only, and share no state with the twin stream. Posting a simulated envelope to `/v1/twin/envelopes` is rejected, and the reverse.
 
-### 7. Cognitum Spaces receives a pointer, not media
+### 7. Cognitum Spaces receives a labelled simulation, not media
 
-Spaces stores small semantic JSON and rejects recording fields by name. A rollout is published as one `POST /v1/spatial/events` body with `eventType: "simulation.rollout"`, `confidence: 0`, the clip's SHA-256 and size, a locator for where the operator hosts the clip, and the model provenance. `worldgraph_pan2::spaces::validate_event` mirrors the handler's limits as a local preflight; the server stays the authority.
+Spaces stores small semantic JSON and rejects recording fields by name. A rollout is published as one `POST /v1/spatial/simulations` body (cognitum-one/api ADR-107): `simulationType: "video.rollout"`, `confidence: 0`, the clip's SHA-256 and size, a locator for where the operator hosts the clip, and the model provenance (`model`, `provider`, `generationSeed`, `sourceSnapshotHash`; the rest of the run record goes in `attributes`). A simulation is its own kind, never an event, so it cannot appear in the observed event log or in a space snapshot. The server stamps `simulated: true`, and writing needs the `spaces:simulate` permission, which `spaces:write` does not grant. `worldgraph_pan2::spaces::validate_simulation` mirrors the handler's limits as a local preflight; the server stays the authority.
 
-Publishing is a separate, explicit step (`pan2-rollout publish`, behind the `spaces-http` feature). Nothing in the pipeline sends to Spaces on its own.
+The first version of this ADR published a `simulation.rollout` event to `/v1/spatial/events`. That worked against the handler's schema but put predictions in the observation log, so it was replaced.
+
+Publishing is a separate, explicit step (`pan2-rollout publish`, behind the `spaces-http` feature). Nothing in the pipeline sends to Spaces on its own. The ADR-107 routes are implemented on a local branch of the API repository: not merged, not deployed, and the one new Firestore index is not applied, so these routes do not exist in production yet.
 
 ### 8. Spaces records can seed a rollout
 
-`worldgraph_pan2::spaces_scene` turns the records of one space (site, space, zones, entities, events, as returned by `GET /v1/spatial/*`) into a `RolloutPlan`. The Spaces schema has no geometry or prose fields, so layout (`centerM`, `sizeM`, `class`), appearance and event narrative are read from each record's free-form `attributes`. Events are ordered by `eventSequence` and share the clip evenly; their real timestamps are not replayed. A person or track entity that is not `identityMode: "anonymous"` is dropped and counted as a redaction. The SHA-256 of the snapshot becomes the plan's `source_snapshot_hash`, so a rollout names the exact Spaces data it was built from.
+`worldgraph_pan2::spaces_scene` turns the records of one space (site, space, zones, entities, events) into a `RolloutPlan`. It reads either this crate's snapshot file or a `GET /v1/spatial/snapshots/{spaceId}` response. For a response it recomputes the canonical-JSON hash of `data` and refuses the snapshot if it differs from `snapshotHash`; that hash becomes the plan's `source_snapshot_hash`, so a rollout names the exact Spaces data it was built from. Layout comes from each record's validated `placement` (`centerM`, `sizeM`), falling back to the free-form `attributes` of the same names for data written before ADR-107. Appearance, `class`, event narrative and camera still come from `attributes`. `physics` is validated, stored and served by the API but is not used in the caption: PAN 2 takes text, and a number such as a mass cannot be conveyed to it reliably. Events are ordered by `eventSequence` and share the clip evenly; their real timestamps are not replayed. A person or track entity that is not `identityMode: "anonymous"` is dropped and counted as a redaction.
 
 The resulting clip dramatizes a recorded sequence. It is not a recording of it.
 
@@ -100,7 +102,7 @@ The resulting clip dramatizes a recorded sequence. It is not a recording of it.
 
 ## Not done
 
-- No rollout has been published to the production Spaces API, and the `api` service was not changed or deployed.
+- No rollout has been published to the production Spaces API, and the `api` service was not deployed. Its ADR-107 changes exist only on a local branch.
 - No crate or npm package was published.
 - The token count of compiled captions was not measured with the Qwen3.5 tokenizer.
 - No comparison against other providers (Wan 2.2, Oasis) was run.

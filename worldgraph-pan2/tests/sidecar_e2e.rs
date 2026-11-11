@@ -11,7 +11,9 @@ use worldgraph_pan2::bundle::read_bundle;
 use worldgraph_pan2::compile::ImageRef;
 use worldgraph_pan2::media::sha256_hex;
 use worldgraph_pan2::pipeline::{accept, generate, pan2_provider, WorkerPlacement};
-use worldgraph_pan2::spaces::{rollout_event, validate_event, EventIdentity, SpacesTarget};
+use worldgraph_pan2::spaces::{
+    rollout_simulation, validate_simulation, EventIdentity, SpacesTarget,
+};
 use worldgraph_pan2::Pan2Error;
 
 use common::{door_plan, start, temp_dir};
@@ -39,7 +41,10 @@ async fn plan_becomes_a_verified_bundle_a_graph_record_and_a_spaces_event() {
     assert_eq!(provenance.provider, "pan2-worker");
     assert_eq!(provenance.license.license_id, "Apache-2.0");
     assert_eq!(provenance.generation_seed, 123);
-    assert_eq!(provenance.source_snapshot_hash, "sha256:feedface");
+    assert_eq!(
+        provenance.source_snapshot_hash,
+        "sha256:feedface00000000000000000000000000000000000000000000000000000000"
+    );
     assert!(provenance.privacy.hosted_processing_approved);
     assert_eq!(generated.envelope.chunk.frames.len(), 3);
     assert!(generated.envelope.session_id.starts_with("pan2-t-"));
@@ -90,7 +95,7 @@ async fn plan_becomes_a_verified_bundle_a_graph_record_and_a_spaces_event() {
         other => panic!("unexpected node {other:?}"),
     }
 
-    let event = rollout_event(
+    let event = rollout_simulation(
         &generated.envelope,
         &SpacesTarget {
             site_id: "rulab".into(),
@@ -105,10 +110,10 @@ async fn plan_becomes_a_verified_bundle_a_graph_record_and_a_spaces_event() {
         Some("https://example.invalid/rollouts/rf-door/clip.mp4"),
     )
     .unwrap();
-    validate_event(&event).unwrap();
-    assert_eq!(event["eventType"], "simulation.rollout");
+    validate_simulation(&event).unwrap();
+    assert_eq!(event["simulationType"], "video.rollout");
+    assert!(event.get("eventType").is_none());
     assert_eq!(event["confidence"], 0);
-    assert_eq!(event["attributes"]["simulated"], true);
     assert_eq!(event["attributes"]["mediaSha256"], reread.media.sha256);
     assert_eq!(event["provenance"]["generationSeed"], "123");
     assert!(serde_json::to_vec(&event).unwrap().len() < 4_096);

@@ -1,5 +1,4 @@
-
-| `spaces_scene` | Builds a plan from Cognitum Spaces records (site, space, zones, entities, events) |# worldgraph-pan2
+# worldgraph-pan2
 
 PAN 2 as a simulated-rollout provider for worldgraph. Decision record: [ADR 207](../docs/adr/207-pan2-simulated-rollout-provider.md).
 
@@ -17,7 +16,9 @@ A rollout is a prediction. It is never labelled as a capture or an observation, 
 | `media` | SHA-256 and size verification for files copied from the GPU host |
 | `bundle` | The `worldgraph.simulated.rollout` bundle that RuLab plays |
 | `projection` | Records a rollout as one zero-confidence `SemanticState` |
-| `spaces` | Builds and preflights a Cognitum Spaces `simulation.rollout` event |
+| `spaces` | Builds and preflights a Cognitum Spaces simulation body (`POST /v1/spatial/simulations`, ADR-107) |
+| `spaces_scene` | Builds a plan from Cognitum Spaces records or a verified snapshot response |
+| `canonical` | Canonical JSON and `sha256:` hash matching the Spaces API's `snapshotHash` |
 | `pipeline` | The end-to-end client flow |
 
 Two binaries: `pan2-worker` (runs on the GPU host) and `pan2-rollout` (runs on your machine).
@@ -107,18 +108,30 @@ Unknown fields are rejected.
 ## From Cognitum Spaces records
 
 ```bash
-pan2-rollout from-spaces --snapshot worldgraph-pan2/examples/spaces/warehouse-amr.json \\
+# Either a snapshot file from examples/spaces/ ...
+pan2-rollout from-spaces --snapshot worldgraph-pan2/examples/spaces/warehouse-amr.json \
   --duration 20 --approve-hosted --out plan.json
+
+# ... or a saved GET /v1/spatial/snapshots/{spaceId} response (ADR-107)
+curl -H "x-api-key: $COG_KEY" \
+  "https://api.cognitum.one/v1/spatial/snapshots/pick-hall-a?workspaceId=$WORKSPACE&events=16" > snapshot.json
+pan2-rollout from-spaces --snapshot snapshot.json --duration 20 --approve-hosted --out plan.json
 ```
 
-A snapshot holds the `data` records the Spaces API returns for one space: `site`, `space`, `zones`, `entities` and `events`. Spaces has no geometry fields, so the converter reads these from each record's `attributes`:
+A snapshot holds the `data` records for one space: `site`, `space`, `zones`, `entities` and `events`. When the file is an API response, its `snapshotHash` is recomputed from `data` and the file is refused on a mismatch; the verified hash becomes the plan's `source_snapshot_hash`. (The ADR-107 routes are not deployed yet; see the ADR.) The converter reads:
 
-- space: `description`, `lighting`, `view`
-- zone or entity: `centerM` and `sizeM` (`[x, y, z]` in metres), `class`
-- entity: `appearance` (makes it a tracked subject)
-- event: `entityId`, `narrative`, `action`
+- space: `attributes.description`, `lighting`, `view`, `camera`, `style`
+- zone or entity: `placement.centerM` and `placement.sizeM` (`[x, y, z]` in metres), or the same names under `attributes` for older data; `attributes.class`
+- entity: `attributes.appearance` (makes it a tracked subject)
+- event: `attributes.entityId`, `narrative`, `action`
 
-Events are ordered by `eventSequence` and share the clip evenly. People must be `identityMode: "anonymous"` or they are left out. The plan's `source_snapshot_hash` is the SHA-256 of the snapshot. Two examples are in `examples/spaces/`.
+`physics` (mass, speed limits, friction) is carried by the API but is not used in the caption.
+
+Events are ordered by `eventSequence` and share the clip evenly. People must be `identityMode: "anonymous"` or they are left out. For a local snapshot file the plan's `source_snapshot_hash` is the SHA-256 of the file's content. Examples are in `examples/spaces/`.
+
+## Record a rollout in Spaces
+
+`pan2-rollout accept ... --site <id> --space <id> --simulation-out simulation.json` writes the body and sends nothing. `pan2-rollout publish --simulation simulation.json --base-url <url> --key-env <VAR>` (feature `spaces-http`) posts it to `/v1/spatial/simulations`. That needs a key with the `spaces:simulate` permission; `spaces:write` does not grant it. The server labels the record simulated and stores confidence 0.
 
 ## Limits worth knowing
 

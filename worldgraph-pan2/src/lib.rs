@@ -33,6 +33,7 @@
 //! an observation, or evidence, and the confidence it records is always zero.
 
 pub mod bundle;
+pub mod canonical;
 pub mod caption;
 pub mod compile;
 pub mod error;

@@ -136,7 +136,8 @@ pub async fn start(label: &str, fail: bool) -> Harness {
 pub fn door_plan() -> RolloutPlan {
     RolloutPlan {
         name: "RF door opens".into(),
-        source_snapshot_hash: "sha256:feedface".into(),
+        source_snapshot_hash:
+            "sha256:feedface00000000000000000000000000000000000000000000000000000000".into(),
         source_stream_epoch: 7,
         generation_seed: 123,
         projection_id: "rulab-public-demo".into(),

@@ -6,9 +6,9 @@
 //!                       (--hosted | --weights <dir>) --accept-terms [--timeout-min 120]
 //! pan2-rollout accept   --plan <plan.json> --envelope <envelope.json> --media-root <dir>
 //!                       --out <bundle dir> [--first-frame <image>]
-//!                       [--site <id> --space <id> --event-out <file> [--media-url <url>]]
+//!                       [--site <id> --space <id> --simulation-out <file> [--media-url <url>]]
 //! pan2-rollout verify   <bundle dir>
-//! pan2-rollout publish  --event <file> --base-url <url> --key-env <VAR>   (feature spaces-http)
+//! pan2-rollout publish  --simulation <file> --base-url <url> --key-env <VAR>   (feature spaces-http)
 //! ```
 //!
 //! `generate` talks to the worker and saves the envelope. Copy the worker's
@@ -26,7 +26,7 @@ use worldgraph_pan2::bundle::read_bundle;
 use worldgraph_pan2::compile::compile;
 use worldgraph_pan2::pipeline::{accept, generate, pan2_provider, Generated, WorkerPlacement};
 use worldgraph_pan2::plan::RolloutPlan;
-use worldgraph_pan2::spaces::{rollout_event, EventIdentity, SpacesTarget};
+use worldgraph_pan2::spaces::{rollout_simulation, EventIdentity, SpacesTarget};
 use worldgraph_pan2::spaces_scene::{PlanOptions, SpacesSnapshot};
 use worldgraph_pan2::Pan2Error;
 
@@ -155,7 +155,7 @@ fn run_accept(args: &[String]) -> Result<(), Pan2Error> {
             "{}.e{}-s{}",
             envelope.session_id, envelope.epoch, envelope.sequence
         );
-        let event = rollout_event(
+        let simulation = rollout_simulation(
             envelope,
             &SpacesTarget {
                 site_id: site.clone(),
@@ -169,9 +169,9 @@ fn run_accept(args: &[String]) -> Result<(), Pan2Error> {
             },
             values.get("media-url").map(String::as_str),
         )?;
-        let event_out = required(&values, "event-out")?;
-        std::fs::write(&event_out, serde_json::to_vec_pretty(&event)?)?;
-        eprintln!("Spaces event written to {event_out} (not sent)");
+        let simulation_out = required(&values, "simulation-out")?;
+        std::fs::write(&simulation_out, serde_json::to_vec_pretty(&simulation)?)?;
+        eprintln!("Spaces simulation written to {simulation_out} (not sent)");
     }
     Ok(())
 }
@@ -201,14 +201,17 @@ fn rfc3339_utc(unix_ms: i64) -> String {
 #[cfg(feature = "spaces-http")]
 async fn run_publish(args: &[String]) -> Result<(), Pan2Error> {
     let values = flags(args, &[])?;
-    let event: serde_json::Value =
-        serde_json::from_slice(&std::fs::read(required(&values, "event")?)?)?;
+    let simulation: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(required(&values, "simulation")?)?)?;
     let variable = required(&values, "key-env")?;
     let key = std::env::var(&variable)
         .map_err(|_| invalid(format!("environment variable `{variable}` is not set")))?;
-    let (status, body) =
-        worldgraph_pan2::spaces::publish_event(&required(&values, "base-url")?, &key, &event)
-            .await?;
+    let (status, body) = worldgraph_pan2::spaces::publish_simulation(
+        &required(&values, "base-url")?,
+        &key,
+        &simulation,
+    )
+    .await?;
     println!("{status} {body}");
     Ok(())
 }

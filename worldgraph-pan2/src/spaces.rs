@@ -1,24 +1,26 @@
 //! Cognitum Spaces projection of a rollout.
 //!
 //! Spaces stores small semantic JSON, never media. A rollout is published as
-//! one `POST /v1/spatial/events` body that says a simulation exists, carries
-//! the clip's hash and a pointer to it, and repeats the model provenance. The
-//! clip itself stays wherever the operator hosts it.
+//! one `POST /v1/spatial/simulations` body (ADR-107): a labelled, zero-confidence
+//! prediction that carries the clip's hash and a pointer to it plus the model
+//! provenance. It is never an event, so it cannot be mistaken for an
+//! observation. The clip itself stays wherever the operator hosts it.
 //!
-//! [`validate_event`] mirrors the limits enforced by the Spaces handler
-//! (`functions/api/src/api/spatial-resources.ts` in `cognitum-one/api`, read
-//! 2026-11-11) so a payload is checked before it leaves the process. The
-//! server remains the authority; this is a local preflight, not a guarantee.
+//! [`validate_simulation`] mirrors the limits enforced by the Spaces handler
+//! (`functions/api/src/api/spatial-resources.ts`, `spatial-simulations.ts` in
+//! `cognitum-one/api`, ADR-107 branch `feat/spaces-simulated-rollouts`, not yet
+//! deployed) so a payload is checked before it leaves the process. The server
+//! remains the authority; this is a local preflight, not a guarantee.
 
 use serde_json::{json, Map, Value};
 use wifi_densepose_worldmodel::SimulatedFrameEnvelope;
 
 use crate::Pan2Error;
 
-/// Event type used for simulated rollouts.
-pub const ROLLOUT_EVENT_TYPE: &str = "simulation.rollout";
+/// `simulationType` used for PAN 2 video rollouts.
+pub const ROLLOUT_SIMULATION_TYPE: &str = "video.rollout";
 /// Largest request body the Spaces handler accepts.
-pub const MAX_EVENT_BYTES: usize = 64 * 1024;
+pub const MAX_BODY_BYTES: usize = 64 * 1024;
 /// Largest safe integer in JavaScript; `eventSequence` must not exceed it.
 pub const MAX_SAFE_INTEGER: u64 = (1 << 53) - 1;
 
@@ -46,7 +48,12 @@ const WRITE_FIELDS: &[&str] = &[
     "confidence",
     "attributes",
     "provenance",
+    "placement",
+    "physics",
+    "simulationType",
 ];
+/// Keys the server accepts in a simulation's `provenance` (closed set).
+const PROVENANCE_KEYS: &[&str] = &["model", "provider", "generationSeed", "sourceSnapshotHash"];
 /// Edge-only field names, compared after lowercasing and dropping non-alphanumerics.
 const FORBIDDEN_FIELDS: &[&str] = &[
     "csi",
@@ -113,11 +120,11 @@ pub fn is_spaces_id(value: &str) -> bool {
             .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'_' | b'.' | b':' | b'-'))
 }
 
-/// Builds the event body for one rollout.
+/// Builds the simulation body for one rollout.
 ///
 /// `media_url` is where a reader can fetch the clip; when absent the worker's
 /// media locator is used, which only resolves for the operator.
-pub fn rollout_event(
+pub fn rollout_simulation(
     envelope: &SimulatedFrameEnvelope,
     target: &SpacesTarget,
     identity: &EventIdentity,
@@ -143,37 +150,36 @@ pub fn rollout_event(
         "privacy": "P2",
         "siteId": target.site_id,
         "spaceId": target.space_id,
-        "eventType": ROLLOUT_EVENT_TYPE,
-        // A prediction is not evidence about the space.
+        "simulationType": ROLLOUT_SIMULATION_TYPE,
+        // A prediction is not evidence about the space; the server stores 0 regardless.
         "confidence": 0,
         "attributes": {
-            "simulated": true,
             "label": "Model prediction, not an observation",
             "mediaType": clip.media_type,
             "mediaSha256": clip.content_hash.trim_start_matches("sha256:"),
             "mediaBytes": clip.byte_length,
             "mediaLocator": media_url.unwrap_or(&clip.locator),
-        },
-        "provenance": {
-            "simulated": true,
-            "provider": provenance.provider,
-            "model": provenance.model,
+            // The server's provenance is a closed set; the rest of the run record lives here.
             "checkpoint": provenance.checkpoint,
             "runtimeVersion": provenance.runtime_version,
             "license": provenance.license.license_id,
-            "sourceSnapshotHash": provenance.source_snapshot_hash,
             "sourceStreamEpoch": provenance.source_stream_epoch,
             "promptActionHash": provenance.prompt_action_hash,
-            // Strings: a u64 seed can exceed JavaScript's safe integer range.
-            "generationSeed": provenance.generation_seed.to_string(),
             "generationSequence": provenance.generation_sequence.to_string(),
             "sessionId": envelope.session_id,
             "sessionEpoch": envelope.epoch.to_string(),
             "projectionId": provenance.privacy.projection_id,
             "hostedProcessingApproved": provenance.privacy.hosted_processing_approved,
         },
+        "provenance": {
+            "provider": provenance.provider,
+            "model": provenance.model,
+            // Strings: a u64 seed can exceed JavaScript's safe integer range.
+            "generationSeed": provenance.generation_seed.to_string(),
+            "sourceSnapshotHash": provenance.source_snapshot_hash,
+        },
     });
-    validate_event(&event)?;
+    validate_simulation(&event)?;
     Ok(event)
 }
 
@@ -259,17 +265,48 @@ fn rfc3339(value: &str) -> bool {
                 .all(|b| b.is_ascii_digit()))
 }
 
-/// Local preflight of a `POST /v1/spatial/events` body.
-pub fn validate_event(event: &Value) -> Result<(), Pan2Error> {
-    let contract = |message: &str| Err(Pan2Error::Contract(message.to_owned()));
-    let body: &Map<String, Value> = match event.as_object() {
-        Some(body) => body,
-        None => return contract("event body must be a JSON object"),
-    };
-    if serde_json::to_vec(event)?.len() > MAX_EVENT_BYTES {
-        return contract("event body exceeds 64 KiB");
+fn is_hex(value: &str, length: usize) -> bool {
+    value.len() == length
+        && value
+            .bytes()
+            .all(|b| matches!(b, b'0'..=b'9' | b'a'..=b'f'))
+}
+
+/// Mirrors `validateMediaLocator`: a safe relative path or a credential-free https URL.
+fn media_locator_error(locator: &str) -> Option<&'static str> {
+    if locator.is_empty() || locator.len() > 512 {
+        return Some("attributes.mediaLocator must be 1 to 512 bytes");
     }
-    walk(event, 0, &mut 0)?;
+    if locator.contains(['?', '#']) {
+        return Some("attributes.mediaLocator must not carry a query or fragment");
+    }
+    if locator.len() > 8 && locator[..8].eq_ignore_ascii_case("https://") {
+        let authority = locator[8..].split('/').next().unwrap_or("");
+        if authority.contains('@') {
+            return Some("attributes.mediaLocator must not carry credentials");
+        }
+        return authority
+            .is_empty()
+            .then_some("attributes.mediaLocator needs a host");
+    }
+    let safe = locator
+        .bytes()
+        .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'_' | b'~' | b'/' | b'-'));
+    (!safe || locator.starts_with('/') || locator.split('/').any(|part| part == ".."))
+        .then_some("attributes.mediaLocator must be a safe relative path or an https URL")
+}
+
+/// Local preflight of a `POST /v1/spatial/simulations` body.
+pub fn validate_simulation(simulation: &Value) -> Result<(), Pan2Error> {
+    let contract = |message: &str| Err(Pan2Error::Contract(message.to_owned()));
+    let body: &Map<String, Value> = match simulation.as_object() {
+        Some(body) => body,
+        None => return contract("simulation body must be a JSON object"),
+    };
+    if serde_json::to_vec(simulation)?.len() > MAX_BODY_BYTES {
+        return contract("simulation body exceeds 64 KiB");
+    }
+    walk(simulation, 0, &mut 0)?;
     if let Some(unknown) = body
         .keys()
         .find(|key| !WRITE_FIELDS.contains(&key.as_str()))
@@ -309,44 +346,109 @@ pub fn validate_event(event: &Value) -> Result<(), Pan2Error> {
     {
         return contract("eventSequence must be a non-negative safe integer");
     }
-    if !body
-        .get("eventType")
-        .and_then(Value::as_str)
-        .is_some_and(|kind| !kind.is_empty() && kind.len() <= 80)
+    let kind = body.get("simulationType").and_then(Value::as_str);
+    if !kind.is_some_and(|kind| {
+        let bytes = kind.as_bytes();
+        (1..=80).contains(&bytes.len())
+            && bytes[0].is_ascii_lowercase()
+            && bytes.iter().all(|b| {
+                b.is_ascii_lowercase() || b.is_ascii_digit() || matches!(b, b'.' | b'_' | b'-')
+            })
+    }) {
+        return contract("simulationType is required (lowercase letters, digits, '.', '_', '-')");
+    }
+    // The server rejects any non-zero confidence on a simulation.
+    if body
+        .get("confidence")
+        .is_some_and(|value| value.as_f64() != Some(0.0))
     {
-        return contract("eventType is required");
+        return contract("confidence must be 0 on a simulation");
     }
-    if let Some(confidence) = body.get("confidence") {
-        if !confidence
-            .as_f64()
-            .is_some_and(|value| (0.0..=1.0).contains(&value))
+    let Some(provenance) = body.get("provenance").and_then(Value::as_object) else {
+        return contract("provenance with model and provider is required on a simulation");
+    };
+    if let Some(extra) = provenance
+        .keys()
+        .find(|key| !PROVENANCE_KEYS.contains(&key.as_str()))
+    {
+        return Err(Pan2Error::Contract(format!(
+            "provenance field `{extra}` is not supported on a simulation"
+        )));
+    }
+    for field in ["model", "provider"] {
+        if !provenance
+            .get(field)
+            .and_then(Value::as_str)
+            .is_some_and(|text| !text.is_empty() && text.len() <= 120)
         {
-            return contract("confidence must be in [0,1]");
+            return Err(Pan2Error::Contract(format!(
+                "provenance.{field} is required (at most 120 bytes)"
+            )));
         }
     }
-    for field in ["attributes", "provenance"] {
-        if body.get(field).is_some_and(|value| !value.is_object()) {
-            return Err(Pan2Error::Contract(format!("{field} must be an object")));
+    if provenance.get("generationSeed").is_some_and(|seed| {
+        !seed.as_str().is_some_and(|text| {
+            (1..=20).contains(&text.len()) && text.bytes().all(|b| b.is_ascii_digit())
+        })
+    }) {
+        return contract("provenance.generationSeed must be 1 to 20 decimal digits");
+    }
+    if provenance.get("sourceSnapshotHash").is_some_and(|hash| {
+        !hash
+            .as_str()
+            .and_then(|text| text.strip_prefix("sha256:"))
+            .is_some_and(|hex| is_hex(hex, 64))
+    }) {
+        return contract("provenance.sourceSnapshotHash must be sha256: plus 64 hex characters");
+    }
+    if let Some(attributes) = body.get("attributes").and_then(Value::as_object) {
+        if attributes
+            .get("mediaSha256")
+            .is_some_and(|hash| !hash.as_str().is_some_and(|hex| is_hex(hex, 64)))
+        {
+            return contract("attributes.mediaSha256 must be 64 lowercase hex characters");
         }
+        if attributes
+            .get("mediaBytes")
+            .is_some_and(|bytes| !bytes.as_u64().is_some_and(|n| n <= 1 << 36))
+        {
+            return contract("attributes.mediaBytes must be an integer from 0 to 2^36");
+        }
+        if attributes.get("mediaType").is_some_and(|kind| {
+            !kind
+                .as_str()
+                .is_some_and(|text| !text.is_empty() && text.len() <= 80 && text.contains('/'))
+        }) {
+            return contract("attributes.mediaType must be a media type of at most 80 bytes");
+        }
+        if let Some(locator) = attributes.get("mediaLocator") {
+            match locator.as_str().map(media_locator_error) {
+                Some(None) => {}
+                Some(Some(message)) => return contract(message),
+                None => return contract("attributes.mediaLocator must be a string"),
+            }
+        }
+    } else if body.get("attributes").is_some() {
+        return contract("attributes must be an object");
     }
     Ok(())
 }
 
-/// Publishes an event with an API key that has `spaces:write`.
+/// Publishes a simulation with an API key that has `spaces:simulate` (not `spaces:write`).
 ///
 /// Returns the HTTP status and response body. Any non-2xx status is an error.
 #[cfg(feature = "spaces-http")]
-pub async fn publish_event(
+pub async fn publish_simulation(
     base_url: &str,
     api_key: &str,
-    event: &Value,
+    simulation: &Value,
 ) -> Result<(u16, Value), Pan2Error> {
-    validate_event(event)?;
-    let url = format!("{}/v1/spatial/events", base_url.trim_end_matches('/'));
+    validate_simulation(simulation)?;
+    let url = format!("{}/v1/spatial/simulations", base_url.trim_end_matches('/'));
     let response = reqwest::Client::new()
         .post(url)
         .header("x-api-key", api_key)
-        .json(event)
+        .json(simulation)
         .send()
         .await
         .map_err(|error| Pan2Error::Contract(format!("Spaces request failed: {error}")))?;
@@ -377,34 +479,79 @@ mod tests {
         assert!(!rfc3339("2026-11-11T10:00:00.Z"));
     }
 
+    fn valid() -> Value {
+        json!({
+            "id": "s1", "messageId": "m1", "eventSequence": 1, "observedAt": "2026-11-11T10:00:00Z",
+            "privacy": "P2", "siteId": "site", "spaceId": "space", "simulationType": "video.rollout",
+            "confidence": 0,
+            "attributes": {"mediaSha256": "a".repeat(64), "mediaBytes": 10, "mediaType": "video/mp4",
+                "mediaLocator": "clips/a.mp4"},
+            "provenance": {"model": "PAN2", "provider": "worldgraph-pan2", "generationSeed": "123",
+                "sourceSnapshotHash": format!("sha256:{}", "b".repeat(64))},
+        })
+    }
+
     #[test]
-    fn forbidden_and_unknown_fields_are_rejected_before_sending() {
-        let base = json!({
-            "id": "e1", "messageId": "m1", "eventSequence": 1, "observedAt": "2026-11-11T10:00:00Z",
-            "privacy": "P2", "siteId": "site", "spaceId": "space", "eventType": "simulation.rollout",
-            "attributes": {}, "provenance": {},
-        });
-        assert!(validate_event(&base).is_ok());
-
-        let mut recording = base.clone();
+    fn a_complete_simulation_passes_and_each_server_rule_is_mirrored() {
+        assert!(validate_simulation(&valid()).is_ok());
+        type Case = (&'static str, fn(&mut Value));
+        let cases: [Case; 14] = [
+            ("recording field", |v| {
+                v["attributes"]["video_recording"] = json!("x")
+            }),
+            ("unknown field", |v| v["mediaUrl"] = json!("x")),
+            ("privacy", |v| v["privacy"] = json!("P1")),
+            ("sequence", |v| {
+                v["eventSequence"] = json!(MAX_SAFE_INTEGER + 1)
+            }),
+            ("event type instead of simulation type", |v| {
+                v.as_object_mut().unwrap().remove("simulationType");
+                v["eventType"] = json!("simulation.rollout");
+            }),
+            ("non-zero confidence", |v| v["confidence"] = json!(0.5)),
+            ("missing provenance", |v| {
+                v.as_object_mut().unwrap().remove("provenance");
+            }),
+            ("extra provenance key", |v| {
+                v["provenance"]["checkpoint"] = json!("c")
+            }),
+            ("bad seed", |v| {
+                v["provenance"]["generationSeed"] = json!("12x")
+            }),
+            ("bad snapshot hash", |v| {
+                v["provenance"]["sourceSnapshotHash"] = json!("sha256:...")
+            }),
+            ("bad media hash", |v| {
+                v["attributes"]["mediaSha256"] = json!("ZZ")
+            }),
+            ("signed url locator", |v| {
+                v["attributes"]["mediaLocator"] = json!("https://x.example/a.mp4?sig=1")
+            }),
+            ("credentialed locator", |v| {
+                v["attributes"]["mediaLocator"] = json!("https://u:p@x.example/a.mp4")
+            }),
+            ("traversal locator", |v| {
+                v["attributes"]["mediaLocator"] = json!("../a.mp4")
+            }),
+        ];
+        for (name, mutate) in cases {
+            let mut body = valid();
+            mutate(&mut body);
+            assert!(
+                validate_simulation(&body).is_err(),
+                "{name} must be rejected"
+            );
+        }
+        let mut recording = valid();
         recording["attributes"]["video_recording"] = json!("x");
-        let error = validate_event(&recording).unwrap_err().to_string();
-        assert!(error.contains("edge-only"), "{error}");
-
-        let mut unknown = base.clone();
-        unknown["mediaUrl"] = json!("x");
-        assert!(validate_event(&unknown).is_err());
-
-        let mut privacy = base.clone();
-        privacy["privacy"] = json!("P1");
-        assert!(validate_event(&privacy).is_err());
-
-        let mut sequence = base.clone();
-        sequence["eventSequence"] = json!(MAX_SAFE_INTEGER + 1);
-        assert!(validate_event(&sequence).is_err());
-
-        let mut confidence = base;
-        confidence["confidence"] = json!(1.5);
-        assert!(validate_event(&confidence).is_err());
+        assert!(validate_simulation(&recording)
+            .unwrap_err()
+            .to_string()
+            .contains("edge-only"));
+        for good in ["a.mp4", "clips/a.mp4", "https://media.example.com/a/b.mp4"] {
+            let mut body = valid();
+            body["attributes"]["mediaLocator"] = json!(good);
+            assert!(validate_simulation(&body).is_ok(), "{good}");
+        }
     }
 }
