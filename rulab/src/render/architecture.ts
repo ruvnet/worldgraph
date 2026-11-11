@@ -12,10 +12,11 @@ export function makeArchitecture(): Architecture {
   const woodTex=surfaceTexture('wood'); ownedTextures.push(woodTex);
   const concrete = new T.MeshPhysicalMaterial({color:0x8b8278,roughness:.27,metalness:.12,clearcoat:.45,clearcoatRoughness:.18,map:concreteTex,roughnessMap:concreteTex,bumpMap:concreteTex,bumpScale:.018});
   const wood = new T.MeshStandardMaterial({color:0xa37443,roughness:.58,map:woodTex,bumpMap:woodTex,bumpScale:.016});
+  concrete.name='concrete';wood.name='wood';
   const dark = new T.MeshStandardMaterial({color:0x22282b,roughness:.44,metalness:.65});
   const white = new T.MeshStandardMaterial({color:0xc7c6bc,roughness:.63});
   const steel = new T.MeshStandardMaterial({color:0xa0a19c,roughness:.28,metalness:.85});
-  const light = new T.MeshBasicMaterial({color:0xffd198});
+  const light = new T.MeshBasicMaterial({color:new T.Color(0xffd198).multiplyScalar(2.5)});
   const black = new T.MeshStandardMaterial({color:0x111719,roughness:.88});
   const glass = new T.MeshPhysicalMaterial({color:0xcedee2,transparent:true,opacity:.13,roughness:.08,metalness:.08,depthWrite:false});
   const green = new T.MeshStandardMaterial({color:0x344721,roughness:.88});

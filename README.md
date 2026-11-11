@@ -153,3 +153,7 @@ boundaries.
 ## License
 
 Dual-licensed **MIT OR Apache-2.0** — see [`LICENSE-MIT`](./LICENSE-MIT) and [`LICENSE-APACHE`](./LICENSE-APACHE).
+
+### Unpublished GPU graphics work
+
+RuLab's GPU realism prototype adds photographic PBR surfaces, HDR lighting, selectable postprocessing and configuration specific rendering evidence. See [the graphics ADR](docs/adr/207-rulab-gpu-realism.md) and [RuLab instructions](rulab/README.md). This work remains a review branch; the published Explorer and Pages deployment are unchanged.

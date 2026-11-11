@@ -10,3 +10,6 @@ ruvector.db
 rulab/test-results/
 rulab/playwright-report/
 rulab/public/wasm/
+
+# Local physical GPU benchmark evidence
+rulab/gpu-results/
