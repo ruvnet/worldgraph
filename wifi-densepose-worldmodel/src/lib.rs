@@ -44,6 +44,7 @@ pub mod bridge;
 pub mod error;
 pub mod occupancy;
 pub mod runtime;
+pub mod physical;
 
 // Re-export the bridge type at the crate root for convenience.
 pub use bridge::{default_socket_path, OccWorldBridge};

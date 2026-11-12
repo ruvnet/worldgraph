@@ -67,6 +67,8 @@ pub enum ExternalModelKind {
     LingBotWorldV2,
     /// Wan2.2 external worker using separately provisioned weights.
     Wan22,
+    /// IFM PAN2 external worker with separately provisioned Apache-2.0 backbone.
+    Pan2,
 }
 
 impl ExternalModelKind {
@@ -89,7 +91,7 @@ impl ExternalModelKind {
                     "Released LingBot-World v2 code and weights are non-commercial".into(),
                 ),
             },
-            Self::Wan22 => LicensePolicy::apache_2_0(),
+            Self::Wan22 | Self::Pan2 => LicensePolicy::apache_2_0(),
         }
     }
 }
@@ -161,7 +163,7 @@ impl ExternalModelConfig {
                     ));
                 }
             }
-            ExternalModelKind::LingBotWorldV2 | ExternalModelKind::Wan22 => {
+            ExternalModelKind::LingBotWorldV2 | ExternalModelKind::Wan22 | ExternalModelKind::Pan2 => {
                 if sidecar.hosted {
                     return Err(WorldModelError::InvalidInput(
                         "local weight providers must not be marked hosted".into(),
@@ -627,7 +629,7 @@ impl CancellationToken {
         self.0.load(Ordering::Acquire)
     }
 
-    async fn cancelled(&self) {
+    pub(crate) async fn cancelled(&self) {
         while !self.is_cancelled() {
             tokio::time::sleep(Duration::from_millis(5)).await;
         }
