@@ -1,0 +1,21 @@
+name: PAN2 physical hypothesis validation
+on:
+  pull_request:
+    paths: ['wifi-densepose-worldmodel/**', 'scripts/pan2-e2e.py', 'Cargo.lock', '.github/workflows/pan2-physical.yml']
+  push:
+    branches: [main]
+    paths: ['wifi-densepose-worldmodel/**', 'scripts/pan2-e2e.py', 'Cargo.lock', '.github/workflows/pan2-physical.yml']
+permissions:
+  contents: read
+jobs:
+  structured-physical-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - run: cargo test -p wifi-densepose-worldmodel --locked
+      - run: cargo clippy -p wifi-densepose-worldmodel --all-targets --no-deps --locked -- -D warnings
+      - run: cargo build -p wifi-densepose-worldmodel --example pan2_physical --locked
+      - run: python3 scripts/pan2-e2e.py

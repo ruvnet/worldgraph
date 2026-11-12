@@ -171,7 +171,9 @@ impl ExternalModelConfig {
                     ));
                 }
             }
-            ExternalModelKind::LingBotWorldV2 | ExternalModelKind::Wan22 => {
+            ExternalModelKind::LingBotWorldV2
+            | ExternalModelKind::Wan22
+            | ExternalModelKind::Pan2 => {
                 if sidecar.hosted {
                     return Err(WorldModelError::InvalidInput(
                         "local weight providers must not be marked hosted".into(),
@@ -666,7 +668,7 @@ impl CancellationToken {
         self.0.load(Ordering::Acquire)
     }
 
-    async fn cancelled(&self) {
+    pub(crate) async fn cancelled(&self) {
         while !self.is_cancelled() {
             tokio::time::sleep(Duration::from_millis(5)).await;
         }
