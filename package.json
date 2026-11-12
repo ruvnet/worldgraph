@@ -53,15 +53,7 @@
   },
   "dependencies": {
     "@metaharness/kernel": "0.1.8",
-    "@metaharness/host-claude-code": "0.1.4",
-    "@metaharness/host-codex": "0.1.4",
-    "@metaharness/host-pi-dev": "0.1.4",
-    "@metaharness/host-hermes": "0.1.5",
-    "@metaharness/host-openclaw": "0.1.5",
-    "@metaharness/host-rvm": "0.1.5",
-    "@metaharness/host-copilot": "0.1.4",
-    "@metaharness/host-opencode": "0.1.4",
-    "@metaharness/host-github-actions": "0.1.5"
+    "@metaharness/host-claude-code": "0.1.4"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
