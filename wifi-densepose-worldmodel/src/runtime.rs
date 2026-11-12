@@ -163,7 +163,9 @@ impl ExternalModelConfig {
                     ));
                 }
             }
-            ExternalModelKind::LingBotWorldV2 | ExternalModelKind::Wan22 | ExternalModelKind::Pan2 => {
+            ExternalModelKind::LingBotWorldV2
+            | ExternalModelKind::Wan22
+            | ExternalModelKind::Pan2 => {
                 if sidecar.hosted {
                     return Err(WorldModelError::InvalidInput(
                         "local weight providers must not be marked hosted".into(),
