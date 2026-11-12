@@ -47,6 +47,8 @@ def command(job, output):
                       ('width', '--video_width'), ('steps', '--num_inference_steps')]:
         args += [flag, str(job[key])]
     args += ['--assets-manifest', job['assets_manifest']]
+    if job.get('attention', 'fa4') != 'fa4':
+        args += ['--attn', job['attention']]
     if job.get('training_config'):
         args += ['--training_config', job['training_config']]
     return args

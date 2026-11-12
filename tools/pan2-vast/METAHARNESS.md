@@ -91,3 +91,7 @@ CPU tests cover scheduling, quantized only commands, budget refusal, failure and
 ## USD 200 authorized run
 
 See the [execution and admission record](../../docs/mission/pan2-budget200-execution.md). The user authorized USD 200 total. The first Software Factory admission attempt was blocked because its executor did not receive the existing vault credential; no Vast API request or GPU inference was made. The budget200 template intentionally refuses planning until its zero hourly rate is replaced with an actual quote. Do not interpret the controller scheduling estimate as a rental billing stop.
+
+## GPUs the pinned FlashAttention-4 kernels do not support
+
+On an RTX 5090 (sm_120) the pinned FA4 build fails in the Qwen text encoder ("launch shared memory exceeds current GPU"), before the DiT runs. Set `"attention": "sdpa"` in the config's `settings` to run the encoder and the DiT's two attention entry points through PyTorch SDPA instead (see `pan2kit/compat.py`; `metaharness.lowend.example.json` is a template with a zero hourly rate you must replace). The swap is applied at runtime inside the worker, so the pinned PAN2 checkout stays clean, and the backend is part of the case identity and `worker.json`: an SDPA run is never the same workload as an FA4 run. It does not replace the quack GEMMs or Triton kernels; whether those run on a given card is separate, and a completed run is not evidence of correctness until its clip is compared with the FA4 reference (same seed and settings).

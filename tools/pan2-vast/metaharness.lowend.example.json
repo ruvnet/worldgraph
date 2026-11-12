@@ -1,0 +1,35 @@
+{
+  "schema": "pan2-metaharness/1",
+  "repo": "PAN2",
+  "vae": "REPLACE_WITH_LOCAL_VAE_SNAPSHOT_DIRECTORY",
+  "assets_manifest": "models/downloads.json",
+  "hardware_label": "rtx5090",
+  "hourly_usd": 0,
+  "budget_usd": 10,
+  "setup_storage_transfer_usd": 4,
+  "timeout_seconds": 1800,
+  "order_seed": 42,
+  "settings": {
+    "frames": 9,
+    "height": 256,
+    "width": 448,
+    "steps": 4,
+    "attention": "sdpa"
+  },
+  "seeds": [
+    42
+  ],
+  "prompts": [
+    {
+      "id": "bounce",
+      "file": "prompt.txt"
+    }
+  ],
+  "variants": [
+    {
+      "id": "base_int4",
+      "checkpoint": "models/base",
+      "bits": 4
+    }
+  ]
+}

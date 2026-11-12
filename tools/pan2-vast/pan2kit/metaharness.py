@@ -52,6 +52,7 @@ def make_plan(config, base):
     settings = config['settings']
     for key in ['frames', 'height', 'width', 'steps']:
         integer(settings[key], key, 1)
+    if settings.get('attention', 'fa4') not in ('fa4', 'sdpa'): raise ValueError('Unknown attention backend')
     if (settings['frames'] - 1) % 8 or settings['height'] % 32 or settings['width'] % 32:
         raise ValueError('Use frames 8n+1 and dimensions divisible by32')
     timeout = integer(config['timeout_seconds'], 'timeout', 1)
