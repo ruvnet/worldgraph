@@ -44,4 +44,4 @@ A separately installed PAN2 worker, complete weights, CUDA executor and calibrat
 
 Review request privacy scopes, socket permissions, image-to-metric calibration, checkpoint attribution and retention before live use. Perform a current dependency advisory scan before release.
 
-Full workspace regression result is recorded in the PR once the executor completes it. No package publication, merge or public endpoint deployment is part of this change.
+Full `cargo test --workspace --all-features --locked` regression completed with exit code 0 after installing the executor's missing pkg-config and libssl-dev packages. No package publication, merge or public endpoint deployment is part of this change.
