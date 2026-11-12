@@ -39,6 +39,7 @@ pub mod compile;
 pub mod error;
 pub mod layout;
 pub mod media;
+pub mod physical_spaces;
 pub mod pipeline;
 pub mod plan;
 pub mod projection;
