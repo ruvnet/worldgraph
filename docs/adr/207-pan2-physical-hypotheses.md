@@ -119,5 +119,5 @@ References: [PAN2 model card](https://github.com/ifm-ai/PAN2/blob/main/MODEL_CAR
 
 ## Quantization experiment controller
 
-[ADR 208](208-pan2-quantization-metaharness.md) adds the optional local quantization metaharness for bounded single variant trials, reproducible scheduling, cost and quality evidence, and cross hardware comparisons. Its decisions never promote physical hypotheses or alter measured observations. CPU evidence does not complete the live acceptance requirements above.
+[ADR 209](209-pan2-quantization-metaharness.md) adds the optional local quantization metaharness for bounded single variant trials, reproducible scheduling, cost and quality evidence, and cross hardware comparisons. Its decisions never promote physical hypotheses or alter measured observations. CPU evidence does not complete the live acceptance requirements above.
 

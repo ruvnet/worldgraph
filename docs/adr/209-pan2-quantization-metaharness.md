@@ -1,4 +1,4 @@
-# ADR 208: Bounded PAN2 quantization metaharness
+# ADR 209: Bounded PAN2 quantization metaharness
 
 Status: implemented local controller; 13 CPU tests pass; GPU, quality and economic evidence pending.
 
