@@ -1,4 +1,4 @@
-# ADR 207: PAN 2 as a simulated-rollout provider
+# ADR 208: PAN 2 as a simulated-rollout provider
 
 Status: implemented on `feat/pan2-simulated-rollouts`. Measured GPU evidence is in [the PAN 2 run record](../mission/pan2-rollout-evidence.md).
 

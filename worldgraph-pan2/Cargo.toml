@@ -1,6 +1,6 @@
 [package]
 name = "worldgraph-pan2"
-description = "ADR-207 — PAN 2 world-model provider for worldgraph: scene-to-caption compiler, GPU-side sidecar worker, verified rollout bundles, and Cognitum Spaces event projection"
+description = "ADR-208 — PAN 2 world-model provider for worldgraph: scene-to-caption compiler, GPU-side sidecar worker, verified rollout bundles, and Cognitum Spaces event projection"
 readme = "README.md"
 version = "0.1.0"
 edition.workspace = true

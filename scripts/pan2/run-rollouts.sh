@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Generate PAN 2 rollouts on a prepared GPU host and accept them locally (ADR-207).
+# Generate PAN 2 rollouts on a prepared GPU host and accept them locally (ADR-208).
 #
 #   scripts/pan2/run-rollouts.sh <user@host> <ssh port> <out dir> <plan.json>...
 #

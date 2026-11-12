@@ -1,4 +1,4 @@
-//! `worldgraph-pan2` — PAN 2 as a simulated-frame provider for worldgraph (ADR-207).
+//! `worldgraph-pan2` — PAN 2 as a simulated-frame provider for worldgraph (ADR-208).
 //!
 //! [PAN 2](https://github.com/ifm-ai/PAN2) is an Apache-2.0 video world model
 //! from MBZUAI's Institute of Foundation Models. Given a description of the

@@ -1,6 +1,6 @@
 # worldgraph-pan2
 
-PAN 2 as a simulated-rollout provider for worldgraph. Decision record: [ADR 207](../docs/adr/207-pan2-simulated-rollout-provider.md).
+PAN 2 as a simulated-rollout provider for worldgraph. Decision record: [ADR 208](../docs/adr/208-pan2-simulated-rollout-provider.md).
 
 [PAN 2](https://github.com/ifm-ai/PAN2) is an Apache-2.0 video world model from MBZUAI's Institute of Foundation Models. You describe a scene and some timed actions; it renders a clip of what might happen next. This crate lets worldgraph ask that question while keeping the rule from [ADR-204](../docs/adr/ADR-204-rust-generative-world-model-runtime.md): the sensed graph is authoritative, and generated pixels are explicitly simulated output.
 

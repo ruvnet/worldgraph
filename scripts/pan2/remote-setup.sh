@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Prepare a rented GPU host for PAN 2 inference (ADR-207).
+# Prepare a rented GPU host for PAN 2 inference (ADR-208).
 #
 # Runs ON the GPU host. Installs the pinned upstream environment, downloads
 # the released weights, and converts them for upstream generate.py. Nothing

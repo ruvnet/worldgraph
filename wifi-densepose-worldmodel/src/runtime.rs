@@ -67,7 +67,7 @@ pub enum ExternalModelKind {
     LingBotWorldV2,
     /// Wan2.2 external worker using separately provisioned weights.
     Wan22,
-    /// PAN 2 (MBZUAI IFM) external worker (ADR-207). Apache-2.0 weights; the
+    /// PAN 2 (MBZUAI IFM) external worker (ADR-208). Apache-2.0 weights; the
     /// worker may run next to local weights or on a remote GPU host, in which
     /// case it is a hosted processor and needs per-seed approval.
     Pan2,

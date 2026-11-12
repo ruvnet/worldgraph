@@ -1,6 +1,6 @@
 # PAN 2 rollout run record
 
-Measured on 2026-11-11 for [ADR 207](../adr/207-pan2-simulated-rollout-provider.md). Everything here was observed in this work; anything not listed was not measured. These are single runs on one configuration, not a benchmark.
+Measured on 2026-11-11 for [ADR 208](../adr/208-pan2-simulated-rollout-provider.md). Everything here was observed in this work; anything not listed was not measured. These are single runs on one configuration, not a benchmark.
 
 ## Setup
 
