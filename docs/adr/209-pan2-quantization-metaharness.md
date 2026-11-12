@@ -1,6 +1,6 @@
 # ADR 209: Bounded PAN2 quantization metaharness
 
-Status: implemented local controller; 13 CPU tests pass; GPU, quality and economic evidence pending.
+Status: implemented local controller; 37 kit tests pass on CPU. First GPU evidence (H200, RTX 5090) is recorded below: INT8 is usable, per-row INT4 is not. Group-wise INT4 and the quality gate are implemented; their GPU results are pending. Economic evidence pending.
 
 ## Decision
 
@@ -53,4 +53,26 @@ A passing decision is a generation experiment recommendation. It always records 
 
 Run python -m unittest discover -s tests -v from tools/pan2-vast. All 13 tests pass with CPU PyTorch. No live PAN2 GPU, quality or dollar savings claim follows. Rollback removes the optional controller and uses the legacy matrix; canonical BF16 files and Rust WSP rollback receipts remain available.
 
-See [usage](../../tools/pan2-vast/METAHARNESS.md), [cost plan](../mission/pan2-quantization-cost-plan.md) and [ADR 207](207-pan2-physical-hypotheses.md).
+## Update 2026-11-12: first GPU evidence and what it changed
+
+One prompt, seed 42, 9 frames at 256x448, 4 steps. A smoke test, not the 30-case evaluation. Similarity is to the BF16 clip made on an H200.
+
+| Variant | Hardware | Result |
+| :--- | :--- | :--- |
+| INT8 per row | H200, FA4 | SSIM 0.914, PSNR 27.5 dB, passes the gate |
+| INT4 per row | H200, FA4 | SSIM 0.591, PSNR 13.2 dB, noise from the first frame, fails the gate |
+| INT4 per row, base and edited | H200 | Identical clips, so the WSP edit had no visible effect |
+| INT4 per row | RTX 5090, SDPA | Completes; peak 17.19 GB; clip matches the H200 INT4 clip (SSIM 0.952), so it is equally noise |
+| INT8 per row | RTX 5090, SDPA | Server ready in about 175 s; 31.8 GB of 32 GB in use; clip matches the H200 INT8 clip (SSIM 0.932) |
+| BF16 | H200 | Rough at the smoke size, so the smoke size itself limits quality |
+
+Decisions taken:
+
+1. **Unsupported GPU fallback.** Upstream attention uses FlashAttention-4 CuTe kernels that fail on sm120 ("launch shared memory exceeds current GPU"). An opt-in `--attn sdpa` backend replaces the three entry points at runtime. The pinned PAN2 checkout stays unmodified, the receipt records the backend, and the setting is part of case identity.
+2. **Per-row INT4 is rejected.** One scale per 4096 wide row lets a single outlier destroy the row. Added `--group N` (one scale per N columns) and `--int8 name,...` (keep named matrices at 8 bits). Saved quantized state moves to schema `quant-state/2` and records both settings. On outlier heavy synthetic weights error falls as the group shrinks (CPU tests). Real model results are pending.
+3. **Quality gate.** `python -m pan2kit gate` compares a clip with the BF16 clip by SSIM and PSNR and fails below 0.85 or 24 dB. The thresholds sit between the measured INT8 and INT4 results. It stops obviously broken variants early; it is similarity for one case, not perceptual or physical validation. The 30 case evaluator remains the decision gate.
+4. **Metaharness gap.** `group` and `int8` are not yet variant fields in the plan, so two INT4 variants of one case would collide in the evaluator's (case, bits) pairing. Until that is fixed, group sweeps run through the worker directly.
+
+Pending: group-wise INT4 and mixed precision results on a 5090, the larger size runs (17 frames, 480x832) that INT4's memory headroom might allow, and the 30 case evaluation.
+
+See [ADR 210](210-pan2-serverless-service.md), [usage](../../tools/pan2-vast/METAHARNESS.md), [cost plan](../mission/pan2-quantization-cost-plan.md) and [ADR 207](207-pan2-physical-hypotheses.md).
