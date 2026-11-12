@@ -1,4 +1,5 @@
 //! Physical hypothesis invariants and real Unix-socket protocol tests.
+use sha2::{Digest, Sha256};
 use std::time::Duration;
 use wifi_densepose_worldgraph::{EnuPoint, WorldGraph, WorldId, WorldNode};
 use wifi_densepose_worldmodel::{
@@ -229,6 +230,13 @@ async fn real_unix_protocol_e2e() {
         let value: serde_json::Value = serde_json::from_str(&line).unwrap();
         assert_eq!(value["schema_version"], 1);
         assert!(!line.contains("SECRET"));
+        assert_eq!(
+            format!(
+                "{:x}",
+                Sha256::digest(line.trim_end_matches('\n').as_bytes())
+            ),
+            expected
+        );
         assert_eq!(r.request_sha256, expected);
         let mut bytes = serde_json::to_vec(&r).unwrap();
         bytes.push(b'\n');
@@ -306,4 +314,64 @@ async fn oversized_and_unterminated_ipc_responses_reject() {
         server.await.unwrap();
         std::fs::remove_file(path).unwrap();
     }
+}
+
+#[test]
+fn broad_phase_matches_exhaustive_segment_reference() {
+    fn hit(b: &PhysicalBounds, a: [f64; 3], z: [f64; 3]) -> bool {
+        let mut enter = 0.0f64;
+        let mut leave = 1.0f64;
+        for axis in 0..3 {
+            let delta = z[axis] - a[axis];
+            if delta == 0.0 {
+                if a[axis] < b.min[axis] || a[axis] > b.max[axis] {
+                    return false;
+                }
+            } else {
+                let t0 = (b.min[axis] - a[axis]) / delta;
+                let t1 = (b.max[axis] - a[axis]) / delta;
+                enter = enter.max(t0.min(t1));
+                leave = leave.min(t0.max(t1));
+            }
+        }
+        enter <= leave
+    }
+    let mut rejected = 0;
+    let mut accepted = 0;
+    for case in 0..200 {
+        let (g, id, mut ctx) = setup();
+        ctx.max_speed_mps = 100.0;
+        ctx.obstacles = (0..8)
+            .map(|i| PhysicalBounds {
+                min: [0.4 + i as f64 * 0.2, -0.4, 0.5],
+                max: [0.5 + i as f64 * 0.2, 0.4, 1.5],
+            })
+            .collect();
+        let scene = PreparedPhysicalScene::from_graph(&g, &[id], ctx.clone()).unwrap();
+        let mut r = response(&scene);
+        let a = [
+            (case % 17) as f64 / 4.0 - 2.0,
+            (case % 11) as f64 / 3.0 - 1.5,
+            1.0,
+        ];
+        let b = [
+            (case % 13) as f64 / 3.0 - 2.0,
+            (case % 7) as f64 / 2.0 - 1.5,
+            1.0,
+        ];
+        r.trajectories[0].points[0].position_m = a;
+        r.trajectories[0].points[1].position_m = b;
+        let collision = ctx
+            .obstacles
+            .iter()
+            .any(|box_| hit(box_, [0.0, 0.0, 1.0], a) || hit(box_, a, b));
+        let valid = scene.accept_json(&serde_json::to_vec(&r).unwrap()).is_ok();
+        assert_eq!(valid, !collision, "case {case}");
+        if valid {
+            accepted += 1;
+        } else {
+            rejected += 1;
+        }
+    }
+    assert!(accepted > 0 && rejected > 0);
 }

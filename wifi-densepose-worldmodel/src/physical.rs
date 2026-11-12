@@ -6,7 +6,7 @@ use crate::{ExternalModelConfig, ExternalModelKind, SidecarConfig, WorldModelErr
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap},
+    collections::{BTreeMap, BTreeSet},
     sync::Arc,
     time::Duration,
 };
@@ -174,11 +174,15 @@ pub struct Pan2PhysicalRequest {
 /// Immutable prepared projection, bound locally to a specific graph snapshot.
 #[derive(Debug, Clone)]
 pub struct PreparedPhysicalScene {
-    request: Arc<Pan2PhysicalRequest>,
+    inner: Arc<PreparedPhysicalInner>,
+}
+#[derive(Debug)]
+struct PreparedPhysicalInner {
+    request: Pan2PhysicalRequest,
     graph_sha256: String,
     request_digest: String,
-    wire: Arc<[u8]>,
-    track_index: Arc<BTreeMap<u64, usize>>,
+    wire: Vec<u8>,
+    track_index: BTreeMap<u64, usize>,
 }
 impl PreparedPhysicalScene {
     /// Project only selected tracks. The caller must authorize IDs and context.
@@ -233,29 +237,39 @@ impl PreparedPhysicalScene {
             tracks,
         };
         let mut wire = serde_json::to_vec(&request)?;
-        require(wire.len() < MAX_PHYSICAL_BYTES, "projection exceeds wire limit")?;
+        require(
+            wire.len() < MAX_PHYSICAL_BYTES,
+            "projection exceeds wire limit",
+        )?;
         let request_digest = hash(&wire);
         wire.push(b'\n');
-        let track_index = request.tracks.iter().enumerate().map(|(index, track)| (track.track_id, index)).collect();
+        let track_index = request
+            .tracks
+            .iter()
+            .enumerate()
+            .map(|(index, track)| (track.track_id, index))
+            .collect();
         Ok(Self {
-            request: Arc::new(request),
-            request_digest,
-            wire: wire.into(),
-            track_index: Arc::new(track_index),
-            graph_sha256: hash(
-                &graph
-                    .to_json()
-                    .map_err(|e| WorldModelError::Protocol(e.to_string()))?,
-            ),
+            inner: Arc::new(PreparedPhysicalInner {
+                request,
+                request_digest,
+                wire,
+                track_index,
+                graph_sha256: hash(
+                    &graph
+                        .to_json()
+                        .map_err(|e| WorldModelError::Protocol(e.to_string()))?,
+                ),
+            }),
         })
     }
     /// Read-only, privacy-projected model request.
     pub fn request(&self) -> &Pan2PhysicalRequest {
-        &self.request
+        &self.inner.request
     }
     /// Stable content hash binding a response to this exact request.
     pub fn request_sha256(&self) -> Result<String> {
-        Ok(self.request_digest.clone())
+        Ok(self.inner.request_digest.clone())
     }
     /// Validate untrusted extractor JSON before constructing a usable branch.
     pub fn accept_json(&self, bytes: &[u8]) -> Result<PhysicalForecastBranch> {
@@ -265,27 +279,30 @@ impl PreparedPhysicalScene {
         )?;
         let r: Pan2PhysicalResponse = serde_json::from_slice(bytes)?;
         require(
-            r.schema_version == 1 && r.request_sha256 == self.request_digest,
+            r.schema_version == 1 && r.request_sha256 == self.inner.request_digest,
             "response schema or request hash mismatch",
         )?;
         require(
             sha(&r.model_sha256) && sha(&r.artifact_sha256) && label(&r.extractor_version),
             "model, artifact and extractor provenance required",
         )?;
-        let ctx = &self.request.context;
+        let ctx = &self.inner.request.context;
         require(
             r.frame_id == ctx.frame_id && r.calibration_id == ctx.calibration_id,
             "unregistered prediction frame",
         )?;
         require(
-            r.trajectories.len() == self.request.tracks.len(),
+            r.trajectories.len() == self.inner.request.tracks.len(),
             "response must cover exactly the selected tracks",
         )?;
         let mut seen = BTreeSet::new();
         for t in &r.trajectories {
             require(seen.insert(t.track_id), "duplicate predicted track")?;
-            let index = self.track_index.get(&t.track_id).ok_or_else(|| WorldModelError::InvalidInput("unknown predicted track".into()))?;
-            let seed = &self.request.tracks[*index];
+            let index =
+                self.inner.track_index.get(&t.track_id).ok_or_else(|| {
+                    WorldModelError::InvalidInput("unknown predicted track".into())
+                })?;
+            let seed = &self.inner.request.tracks[*index];
             require(
                 !t.points.is_empty() && t.points.len() <= 64,
                 "trajectory requires 1..=64 points",
@@ -311,11 +328,24 @@ impl PreparedPhysicalScene {
                 }
                 (p, at) = (next.position_m, next.offset_ms);
             }
-            let nearby: Vec<_> = ctx.obstacles.iter().filter(|b| (0..3).all(|axis| b.min[axis] <= swept_max[axis] && b.max[axis] >= swept_min[axis])).collect();
+            let nearby: Vec<_> = ctx
+                .obstacles
+                .iter()
+                .filter(|b| {
+                    (0..3).all(|axis| {
+                        b.min[axis] <= swept_max[axis] && b.max[axis] >= swept_min[axis]
+                    })
+                })
+                .collect();
             if !nearby.is_empty() {
                 let mut previous = seed.position_m;
                 for next in &t.points {
-                    require(!nearby.iter().any(|b| b.intersects(previous, next.position_m)), "trajectory intersects authoritative obstacle")?;
+                    require(
+                        !nearby
+                            .iter()
+                            .any(|b| b.intersects(previous, next.position_m)),
+                        "trajectory intersects authoritative obstacle",
+                    )?;
                     previous = next.position_m;
                 }
             }
@@ -402,18 +432,25 @@ impl PhysicalForecastBranch {
             .to_json()
             .map_err(|e| WorldModelError::Protocol(e.to_string()))?;
         require(
-            hash(&bytes) == self.scene.graph_sha256,
+            hash(&bytes) == self.scene.inner.graph_sha256,
             "observed graph changed; reproject before branching",
         )?;
         let mut branch =
             WorldGraph::from_json(&bytes).map_err(|e| WorldModelError::Protocol(e.to_string()))?;
         for trajectory in &self.response.trajectories {
-            let source = &self.scene.request.tracks[self.scene.track_index[&trajectory.track_id]];
-            let statement = serde_json::to_string(&HypothesisStatement { kind: "physical_hypothesis", execution: self.response.execution, trajectory, request_sha256: &self.response.request_sha256, not_observed: true })?;
+            let source = &self.scene.inner.request.tracks
+                [self.scene.inner.track_index[&trajectory.track_id]];
+            let statement = serde_json::to_string(&HypothesisStatement {
+                kind: "physical_hypothesis",
+                execution: self.response.execution,
+                trajectory,
+                request_sha256: &self.response.request_sha256,
+                not_observed: true,
+            })?;
             branch.add_semantic_state(
                 statement,
                 0.0,
-                self.scene.request.context.observed_at_ms,
+                self.scene.inner.request.context.observed_at_ms,
                 SemanticProvenance {
                     evidence: vec![
                         self.response.artifact_sha256.clone(),
@@ -424,7 +461,14 @@ impl PhysicalForecastBranch {
                         self.response.model_sha256, self.response.extractor_version
                     ),
                     calibration_version: self.response.calibration_id.clone(),
-                    privacy_decision: self.scene.request.context.privacy.projection_id.clone(),
+                    privacy_decision: self
+                        .scene
+                        .inner
+                        .request
+                        .context
+                        .privacy
+                        .projection_id
+                        .clone(),
                 },
                 &[source.world_id],
             );
@@ -434,7 +478,7 @@ impl PhysicalForecastBranch {
     /// Compare exact future ticks against later measurements and a stationary baseline.
     /// Missing, extra or repeated ticks reject rather than biasing the score.
     pub fn reconcile(&self, observations: &PhysicalObservations) -> Result<PhysicalScore> {
-        let ctx = &self.scene.request.context;
+        let ctx = &self.scene.inner.request.context;
         require(
             observations.request_sha256 == self.response.request_sha256
                 && observations.frame_id == ctx.frame_id
@@ -452,25 +496,32 @@ impl PhysicalForecastBranch {
             observations.samples.len() == expected,
             "incomplete observation set",
         )?;
-        let mut actual = HashMap::with_capacity(expected);
+        let mut actual: Vec<_> = observations.samples.iter().collect();
+        actual.sort_unstable_by_key(|o| (o.track_id, o.offset_ms));
+        require(
+            actual
+                .windows(2)
+                .all(|w| (w[0].track_id, w[0].offset_ms) != (w[1].track_id, w[1].offset_ms)),
+            "duplicate observation tick",
+        )?;
         for o in &observations.samples {
             require(
-                o.position_m.iter().all(|v| v.is_finite() && v.abs() <= 1e6)
-                    && actual
-                        .insert((o.track_id, o.offset_ms), o.position_m)
-                        .is_none(),
+                o.position_m.iter().all(|v| v.is_finite() && v.abs() <= 1e6),
                 "duplicate or invalid observation",
             )?;
         }
         let (mut error, mut baseline) = (0.0, 0.0);
         for t in &self.response.trajectories {
-            let seed = &self.scene.request.tracks[self.scene.track_index[&t.track_id]];
+            let seed = &self.scene.inner.request.tracks[self.scene.inner.track_index[&t.track_id]];
             for p in &t.points {
-                let observed = actual.get(&(t.track_id, p.offset_ms)).ok_or_else(|| {
-                    WorldModelError::InvalidInput("observation tick mismatch".into())
-                })?;
-                error += distance2(p.position_m, *observed);
-                baseline += distance2(seed.position_m, *observed);
+                let index = actual
+                    .binary_search_by_key(&(t.track_id, p.offset_ms), |o| (o.track_id, o.offset_ms))
+                    .map_err(|_| {
+                        WorldModelError::InvalidInput("observation tick mismatch".into())
+                    })?;
+                let observed = actual[index].position_m;
+                error += distance2(p.position_m, observed);
+                baseline += distance2(seed.position_m, observed);
             }
         }
         Ok(PhysicalScore {
@@ -558,7 +609,7 @@ impl Pan2PhysicalBridge {
             })?;
         let (reader, mut writer) = stream.into_split();
         writer
-            .write_all(&scene.wire)
+            .write_all(&scene.inner.wire)
             .await
             .map_err(|e| WorldModelError::Protocol(e.to_string()))?;
         let mut limited = BufReader::new(reader).take((MAX_PHYSICAL_BYTES + 1) as u64);

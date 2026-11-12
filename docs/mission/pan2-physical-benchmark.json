@@ -1,0 +1,917 @@
+{
+  "scope": "synthetic CPU adapter; no PAN2 inference",
+  "method": "three alternating process pairs; median of seven warmed round medians per process",
+  "architecture": "x86_64",
+  "cases": [
+    {
+      "tracks": 1,
+      "points_per_track": 8,
+      "obstacles": 0,
+      "stages": {
+        "branch": {
+          "baseline_us": 15.8916,
+          "optimized_us": 8.66122,
+          "speedup": 1.8347992546084733
+        },
+        "prepare": {
+          "baseline_us": 5.5628,
+          "optimized_us": 6.74262,
+          "speedup": 0.8250205409766531
+        },
+        "reconcile": {
+          "baseline_us": 0.4004,
+          "optimized_us": 0.1774,
+          "speedup": 2.2570462232243518
+        },
+        "request_hash": {
+          "baseline_us": 2.4568220000000003,
+          "optimized_us": 0.034140000000000004,
+          "speedup": 71.96315172817809
+        },
+        "validate": {
+          "baseline_us": 6.357,
+          "optimized_us": 3.3045999999999998,
+          "speedup": 1.923682140047207
+        }
+      }
+    },
+    {
+      "tracks": 16,
+      "points_per_track": 32,
+      "obstacles": 32,
+      "stages": {
+        "branch": {
+          "baseline_us": 451.13538,
+          "optimized_us": 180.75194,
+          "speedup": 2.4958812613574164
+        },
+        "prepare": {
+          "baseline_us": 40.756620000000005,
+          "optimized_us": 39.74644,
+          "speedup": 1.0254156095489309
+        },
+        "reconcile": {
+          "baseline_us": 60.297059999999995,
+          "optimized_us": 22.163,
+          "speedup": 2.7206181473627216
+        },
+        "request_hash": {
+          "baseline_us": 14.718813,
+          "optimized_us": 0.03409,
+          "speedup": 431.7633616896451
+        },
+        "validate": {
+          "baseline_us": 219.65538,
+          "optimized_us": 134.67852,
+          "speedup": 1.6309607500884329
+        }
+      }
+    },
+    {
+      "tracks": 64,
+      "points_per_track": 32,
+      "obstacles": 128,
+      "stages": {
+        "branch": {
+          "baseline_us": 1621.15936,
+          "optimized_us": 722.73942,
+          "speedup": 2.2430758792705676
+        },
+        "prepare": {
+          "baseline_us": 151.31792000000002,
+          "optimized_us": 175.59476,
+          "speedup": 0.8617450771310032
+        },
+        "reconcile": {
+          "baseline_us": 366.38412,
+          "optimized_us": 114.72330000000001,
+          "speedup": 3.1936330283386196
+        },
+        "request_hash": {
+          "baseline_us": 56.563497000000005,
+          "optimized_us": 0.045450000000000004,
+          "speedup": 1244.521386138614
+        },
+        "validate": {
+          "baseline_us": 1711.87324,
+          "optimized_us": 573.03228,
+          "speedup": 2.987394078392931
+        }
+      }
+    }
+  ],
+  "process_runs": {
+    "baseline": [
+      {
+        "cases": [
+          {
+            "obstacles": 0,
+            "points_per_track": 8,
+            "response_bytes": 802,
+            "stages": {
+              "branch": {
+                "iterations_per_round": 50,
+                "max_us": 21.77902,
+                "median_us": 15.8916,
+                "min_us": 14.52542,
+                "rounds": 7
+              },
+              "prepare": {
+                "iterations_per_round": 50,
+                "max_us": 7.28562,
+                "median_us": 6.5548,
+                "min_us": 6.4592,
+                "rounds": 7
+              },
+              "reconcile": {
+                "iterations_per_round": 50,
+                "max_us": 0.45380000000000004,
+                "median_us": 0.44060000000000005,
+                "min_us": 0.42919999999999997,
+                "rounds": 7
+              },
+              "request_hash": {
+                "iterations_per_round": 1000,
+                "max_us": 2.816262,
+                "median_us": 2.629152,
+                "min_us": 2.433062,
+                "rounds": 7
+              },
+              "validate": {
+                "iterations_per_round": 50,
+                "max_us": 8.9342,
+                "median_us": 7.5826,
+                "min_us": 6.787,
+                "rounds": 7
+              }
+            },
+            "tracks": 1
+          },
+          {
+            "obstacles": 32,
+            "points_per_track": 32,
+            "response_bytes": 26110,
+            "stages": {
+              "branch": {
+                "iterations_per_round": 50,
+                "max_us": 498.76221999999996,
+                "median_us": 475.56938,
+                "min_us": 467.8316,
+                "rounds": 7
+              },
+              "prepare": {
+                "iterations_per_round": 50,
+                "max_us": 48.34784,
+                "median_us": 47.45304,
+                "min_us": 46.80362,
+                "rounds": 7
+              },
+              "reconcile": {
+                "iterations_per_round": 50,
+                "max_us": 73.09786,
+                "median_us": 57.24084,
+                "min_us": 53.85706,
+                "rounds": 7
+              },
+              "request_hash": {
+                "iterations_per_round": 1000,
+                "max_us": 18.163225999999998,
+                "median_us": 17.784124,
+                "min_us": 17.020185,
+                "rounds": 7
+              },
+              "validate": {
+                "iterations_per_round": 50,
+                "max_us": 252.92022,
+                "median_us": 207.59798,
+                "min_us": 193.82736,
+                "rounds": 7
+              }
+            },
+            "tracks": 16
+          },
+          {
+            "obstacles": 128,
+            "points_per_track": 32,
+            "response_bytes": 105838,
+            "stages": {
+              "branch": {
+                "iterations_per_round": 50,
+                "max_us": 1675.2513999999999,
+                "median_us": 1541.82328,
+                "min_us": 1467.7600400000001,
+                "rounds": 7
+              },
+              "prepare": {
+                "iterations_per_round": 50,
+                "max_us": 218.4016,
+                "median_us": 164.54674,
+                "min_us": 137.22351999999998,
+                "rounds": 7
+              },
+              "reconcile": {
+                "iterations_per_round": 50,
+                "max_us": 368.48212,
+                "median_us": 356.17609999999996,
+                "min_us": 334.03267999999997,
+                "rounds": 7
+              },
+              "request_hash": {
+                "iterations_per_round": 1000,
+                "max_us": 55.673156000000006,
+                "median_us": 52.815104,
+                "min_us": 50.705472,
+                "rounds": 7
+              },
+              "validate": {
+                "iterations_per_round": 50,
+                "max_us": 1971.99724,
+                "median_us": 1711.87324,
+                "min_us": 1532.68968,
+                "rounds": 7
+              }
+            },
+            "tracks": 64
+          }
+        ],
+        "scope": "synthetic adapter CPU benchmark; no PAN2 inference"
+      },
+      {
+        "cases": [
+          {
+            "obstacles": 0,
+            "points_per_track": 8,
+            "response_bytes": 802,
+            "stages": {
+              "branch": {
+                "iterations_per_round": 50,
+                "max_us": 15.792620000000001,
+                "median_us": 12.163620000000002,
+                "min_us": 11.1794,
+                "rounds": 7
+              },
+              "prepare": {
+                "iterations_per_round": 50,
+                "max_us": 6.4064,
+                "median_us": 5.41482,
+                "min_us": 4.2898000000000005,
+                "rounds": 7
+              },
+              "reconcile": {
+                "iterations_per_round": 50,
+                "max_us": 1.0782,
+                "median_us": 0.3492,
+                "min_us": 0.2662,
+                "rounds": 7
+              },
+              "request_hash": {
+                "iterations_per_round": 1000,
+                "max_us": 2.497672,
+                "median_us": 2.4568220000000003,
+                "min_us": 2.337472,
+                "rounds": 7
+              },
+              "validate": {
+                "iterations_per_round": 50,
+                "max_us": 7.37202,
+                "median_us": 5.49722,
+                "min_us": 5.083600000000001,
+                "rounds": 7
+              }
+            },
+            "tracks": 1
+          },
+          {
+            "obstacles": 32,
+            "points_per_track": 32,
+            "response_bytes": 26110,
+            "stages": {
+              "branch": {
+                "iterations_per_round": 50,
+                "max_us": 593.8731,
+                "median_us": 436.74897999999996,
+                "min_us": 392.21332,
+                "rounds": 7
+              },
+              "prepare": {
+                "iterations_per_round": 50,
+                "max_us": 42.944019999999995,
+                "median_us": 37.86524,
+                "min_us": 32.00564,
+                "rounds": 7
+              },
+              "reconcile": {
+                "iterations_per_round": 50,
+                "max_us": 67.37064,
+                "median_us": 64.36826,
+                "min_us": 59.66286,
+                "rounds": 7
+              },
+              "request_hash": {
+                "iterations_per_round": 1000,
+                "max_us": 15.283133,
+                "median_us": 14.111291999999999,
+                "min_us": 13.221091,
+                "rounds": 7
+              },
+              "validate": {
+                "iterations_per_round": 50,
+                "max_us": 234.38879999999997,
+                "median_us": 219.65538,
+                "min_us": 206.15336,
+                "rounds": 7
+              }
+            },
+            "tracks": 16
+          },
+          {
+            "obstacles": 128,
+            "points_per_track": 32,
+            "response_bytes": 105838,
+            "stages": {
+              "branch": {
+                "iterations_per_round": 50,
+                "max_us": 2194.36944,
+                "median_us": 2159.4428,
+                "min_us": 1653.67698,
+                "rounds": 7
+              },
+              "prepare": {
+                "iterations_per_round": 50,
+                "max_us": 164.58133999999998,
+                "median_us": 151.31792000000002,
+                "min_us": 142.69192,
+                "rounds": 7
+              },
+              "reconcile": {
+                "iterations_per_round": 50,
+                "max_us": 447.85118,
+                "median_us": 374.51511999999997,
+                "min_us": 360.89590000000004,
+                "rounds": 7
+              },
+              "request_hash": {
+                "iterations_per_round": 1000,
+                "max_us": 66.988156,
+                "median_us": 65.220384,
+                "min_us": 58.527379,
+                "rounds": 7
+              },
+              "validate": {
+                "iterations_per_round": 50,
+                "max_us": 2013.6938799999998,
+                "median_us": 1960.59044,
+                "min_us": 1721.25224,
+                "rounds": 7
+              }
+            },
+            "tracks": 64
+          }
+        ],
+        "scope": "synthetic adapter CPU benchmark; no PAN2 inference"
+      },
+      {
+        "cases": [
+          {
+            "obstacles": 0,
+            "points_per_track": 8,
+            "response_bytes": 802,
+            "stages": {
+              "branch": {
+                "iterations_per_round": 50,
+                "max_us": 17.0222,
+                "median_us": 16.593220000000002,
+                "min_us": 11.30242,
+                "rounds": 7
+              },
+              "prepare": {
+                "iterations_per_round": 50,
+                "max_us": 6.22842,
+                "median_us": 5.5628,
+                "min_us": 4.9272,
+                "rounds": 7
+              },
+              "reconcile": {
+                "iterations_per_round": 50,
+                "max_us": 0.4904,
+                "median_us": 0.4004,
+                "min_us": 0.277,
+                "rounds": 7
+              },
+              "request_hash": {
+                "iterations_per_round": 1000,
+                "max_us": 2.379062,
+                "median_us": 1.941792,
+                "min_us": 1.8411520000000001,
+                "rounds": 7
+              },
+              "validate": {
+                "iterations_per_round": 50,
+                "max_us": 7.16322,
+                "median_us": 6.357,
+                "min_us": 5.3558,
+                "rounds": 7
+              }
+            },
+            "tracks": 1
+          },
+          {
+            "obstacles": 32,
+            "points_per_track": 32,
+            "response_bytes": 26110,
+            "stages": {
+              "branch": {
+                "iterations_per_round": 50,
+                "max_us": 493.75202,
+                "median_us": 451.13538,
+                "min_us": 371.1569,
+                "rounds": 7
+              },
+              "prepare": {
+                "iterations_per_round": 50,
+                "max_us": 52.77586,
+                "median_us": 40.756620000000005,
+                "min_us": 38.991440000000004,
+                "rounds": 7
+              },
+              "reconcile": {
+                "iterations_per_round": 50,
+                "max_us": 66.29986,
+                "median_us": 60.297059999999995,
+                "min_us": 54.81464,
+                "rounds": 7
+              },
+              "request_hash": {
+                "iterations_per_round": 1000,
+                "max_us": 17.464275,
+                "median_us": 14.718813,
+                "min_us": 14.345152,
+                "rounds": 7
+              },
+              "validate": {
+                "iterations_per_round": 50,
+                "max_us": 232.18779999999998,
+                "median_us": 227.07139999999998,
+                "min_us": 207.02498,
+                "rounds": 7
+              }
+            },
+            "tracks": 16
+          },
+          {
+            "obstacles": 128,
+            "points_per_track": 32,
+            "response_bytes": 105838,
+            "stages": {
+              "branch": {
+                "iterations_per_round": 50,
+                "max_us": 1887.81278,
+                "median_us": 1621.15936,
+                "min_us": 1516.94126,
+                "rounds": 7
+              },
+              "prepare": {
+                "iterations_per_round": 50,
+                "max_us": 171.52573999999998,
+                "median_us": 149.66632,
+                "min_us": 137.4835,
+                "rounds": 7
+              },
+              "reconcile": {
+                "iterations_per_round": 50,
+                "max_us": 443.57998,
+                "median_us": 366.38412,
+                "min_us": 342.31108,
+                "rounds": 7
+              },
+              "request_hash": {
+                "iterations_per_round": 1000,
+                "max_us": 58.104528,
+                "median_us": 56.563497000000005,
+                "min_us": 52.703694000000006,
+                "rounds": 7
+              },
+              "validate": {
+                "iterations_per_round": 50,
+                "max_us": 1702.18082,
+                "median_us": 1604.72434,
+                "min_us": 1599.6913200000001,
+                "rounds": 7
+              }
+            },
+            "tracks": 64
+          }
+        ],
+        "scope": "synthetic adapter CPU benchmark; no PAN2 inference"
+      }
+    ],
+    "optimized": [
+      {
+        "cases": [
+          {
+            "obstacles": 0,
+            "points_per_track": 8,
+            "response_bytes": 802,
+            "stages": {
+              "branch": {
+                "iterations_per_round": 50,
+                "max_us": 9.2884,
+                "median_us": 8.3734,
+                "min_us": 7.76742,
+                "rounds": 7
+              },
+              "prepare": {
+                "iterations_per_round": 50,
+                "max_us": 6.3932,
+                "median_us": 5.372199999999999,
+                "min_us": 5.0024,
+                "rounds": 7
+              },
+              "reconcile": {
+                "iterations_per_round": 50,
+                "max_us": 0.176,
+                "median_us": 0.1746,
+                "min_us": 0.1734,
+                "rounds": 7
+              },
+              "request_hash": {
+                "iterations_per_round": 1000,
+                "max_us": 0.084,
+                "median_us": 0.034140000000000004,
+                "min_us": 0.030920000000000003,
+                "rounds": 7
+              },
+              "validate": {
+                "iterations_per_round": 50,
+                "max_us": 3.758,
+                "median_us": 3.1626,
+                "min_us": 3.07,
+                "rounds": 7
+              }
+            },
+            "tracks": 1
+          },
+          {
+            "obstacles": 32,
+            "points_per_track": 32,
+            "response_bytes": 26110,
+            "stages": {
+              "branch": {
+                "iterations_per_round": 50,
+                "max_us": 195.50376,
+                "median_us": 178.29273999999998,
+                "min_us": 173.35216,
+                "rounds": 7
+              },
+              "prepare": {
+                "iterations_per_round": 50,
+                "max_us": 40.402440000000006,
+                "median_us": 37.703019999999995,
+                "min_us": 36.08764,
+                "rounds": 7
+              },
+              "reconcile": {
+                "iterations_per_round": 50,
+                "max_us": 23.58382,
+                "median_us": 21.8094,
+                "min_us": 20.49822,
+                "rounds": 7
+              },
+              "request_hash": {
+                "iterations_per_round": 1000,
+                "max_us": 0.0421,
+                "median_us": 0.03389,
+                "min_us": 0.03102,
+                "rounds": 7
+              },
+              "validate": {
+                "iterations_per_round": 50,
+                "max_us": 148.36172,
+                "median_us": 127.6793,
+                "min_us": 116.08189999999999,
+                "rounds": 7
+              }
+            },
+            "tracks": 16
+          },
+          {
+            "obstacles": 128,
+            "points_per_track": 32,
+            "response_bytes": 105838,
+            "stages": {
+              "branch": {
+                "iterations_per_round": 50,
+                "max_us": 760.9608199999999,
+                "median_us": 713.49758,
+                "min_us": 683.8029799999999,
+                "rounds": 7
+              },
+              "prepare": {
+                "iterations_per_round": 50,
+                "max_us": 168.64554,
+                "median_us": 155.93932,
+                "min_us": 142.68472,
+                "rounds": 7
+              },
+              "reconcile": {
+                "iterations_per_round": 50,
+                "max_us": 133.76551999999998,
+                "median_us": 114.72330000000001,
+                "min_us": 105.88828,
+                "rounds": 7
+              },
+              "request_hash": {
+                "iterations_per_round": 1000,
+                "max_us": 0.0431,
+                "median_us": 0.03473,
+                "min_us": 0.03381,
+                "rounds": 7
+              },
+              "validate": {
+                "iterations_per_round": 50,
+                "max_us": 609.2913000000001,
+                "median_us": 573.03228,
+                "min_us": 536.2484599999999,
+                "rounds": 7
+              }
+            },
+            "tracks": 64
+          }
+        ],
+        "scope": "synthetic adapter CPU benchmark; no PAN2 inference"
+      },
+      {
+        "cases": [
+          {
+            "obstacles": 0,
+            "points_per_track": 8,
+            "response_bytes": 802,
+            "stages": {
+              "branch": {
+                "iterations_per_round": 50,
+                "max_us": 11.462,
+                "median_us": 8.66122,
+                "min_us": 7.9656199999999995,
+                "rounds": 7
+              },
+              "prepare": {
+                "iterations_per_round": 50,
+                "max_us": 10.1464,
+                "median_us": 6.74262,
+                "min_us": 5.1748,
+                "rounds": 7
+              },
+              "reconcile": {
+                "iterations_per_round": 50,
+                "max_us": 0.1794,
+                "median_us": 0.179,
+                "min_us": 0.17880000000000001,
+                "rounds": 7
+              },
+              "request_hash": {
+                "iterations_per_round": 1000,
+                "max_us": 0.07793000000000001,
+                "median_us": 0.03774,
+                "min_us": 0.03382,
+                "rounds": 7
+              },
+              "validate": {
+                "iterations_per_round": 50,
+                "max_us": 3.9478,
+                "median_us": 3.3045999999999998,
+                "min_us": 3.17162,
+                "rounds": 7
+              }
+            },
+            "tracks": 1
+          },
+          {
+            "obstacles": 32,
+            "points_per_track": 32,
+            "response_bytes": 26110,
+            "stages": {
+              "branch": {
+                "iterations_per_round": 50,
+                "max_us": 210.09436,
+                "median_us": 180.75194,
+                "min_us": 164.65552,
+                "rounds": 7
+              },
+              "prepare": {
+                "iterations_per_round": 50,
+                "max_us": 42.846239999999995,
+                "median_us": 39.74644,
+                "min_us": 38.181239999999995,
+                "rounds": 7
+              },
+              "reconcile": {
+                "iterations_per_round": 50,
+                "max_us": 23.44302,
+                "median_us": 22.163,
+                "min_us": 20.96922,
+                "rounds": 7
+              },
+              "request_hash": {
+                "iterations_per_round": 1000,
+                "max_us": 0.04776,
+                "median_us": 0.03624,
+                "min_us": 0.03143,
+                "rounds": 7
+              },
+              "validate": {
+                "iterations_per_round": 50,
+                "max_us": 152.73072,
+                "median_us": 134.67852,
+                "min_us": 128.29272,
+                "rounds": 7
+              }
+            },
+            "tracks": 16
+          },
+          {
+            "obstacles": 128,
+            "points_per_track": 32,
+            "response_bytes": 105838,
+            "stages": {
+              "branch": {
+                "iterations_per_round": 50,
+                "max_us": 806.85226,
+                "median_us": 722.73942,
+                "min_us": 685.2793800000001,
+                "rounds": 7
+              },
+              "prepare": {
+                "iterations_per_round": 50,
+                "max_us": 191.48095999999998,
+                "median_us": 175.59476,
+                "min_us": 164.05634,
+                "rounds": 7
+              },
+              "reconcile": {
+                "iterations_per_round": 50,
+                "max_us": 130.23972,
+                "median_us": 110.11768,
+                "min_us": 103.45488,
+                "rounds": 7
+              },
+              "request_hash": {
+                "iterations_per_round": 1000,
+                "max_us": 0.0655,
+                "median_us": 0.045450000000000004,
+                "min_us": 0.04322,
+                "rounds": 7
+              },
+              "validate": {
+                "iterations_per_round": 50,
+                "max_us": 629.95014,
+                "median_us": 551.76386,
+                "min_us": 531.51184,
+                "rounds": 7
+              }
+            },
+            "tracks": 64
+          }
+        ],
+        "scope": "synthetic adapter CPU benchmark; no PAN2 inference"
+      },
+      {
+        "cases": [
+          {
+            "obstacles": 0,
+            "points_per_track": 8,
+            "response_bytes": 802,
+            "stages": {
+              "branch": {
+                "iterations_per_round": 50,
+                "max_us": 11.808399999999999,
+                "median_us": 10.12002,
+                "min_us": 9.0404,
+                "rounds": 7
+              },
+              "prepare": {
+                "iterations_per_round": 50,
+                "max_us": 7.92922,
+                "median_us": 7.104220000000001,
+                "min_us": 5.199199999999999,
+                "rounds": 7
+              },
+              "reconcile": {
+                "iterations_per_round": 50,
+                "max_us": 0.1782,
+                "median_us": 0.1774,
+                "min_us": 0.1772,
+                "rounds": 7
+              },
+              "request_hash": {
+                "iterations_per_round": 1000,
+                "max_us": 0.039920000000000004,
+                "median_us": 0.03405,
+                "min_us": 0.03169,
+                "rounds": 7
+              },
+              "validate": {
+                "iterations_per_round": 50,
+                "max_us": 5.869,
+                "median_us": 3.3298,
+                "min_us": 3.1336,
+                "rounds": 7
+              }
+            },
+            "tracks": 1
+          },
+          {
+            "obstacles": 32,
+            "points_per_track": 32,
+            "response_bytes": 26110,
+            "stages": {
+              "branch": {
+                "iterations_per_round": 50,
+                "max_us": 246.99782000000002,
+                "median_us": 238.8356,
+                "min_us": 213.98678,
+                "rounds": 7
+              },
+              "prepare": {
+                "iterations_per_round": 50,
+                "max_us": 48.13944,
+                "median_us": 43.29744,
+                "min_us": 39.96182,
+                "rounds": 7
+              },
+              "reconcile": {
+                "iterations_per_round": 50,
+                "max_us": 32.57002,
+                "median_us": 30.73584,
+                "min_us": 29.549619999999997,
+                "rounds": 7
+              },
+              "request_hash": {
+                "iterations_per_round": 1000,
+                "max_us": 0.0341,
+                "median_us": 0.03409,
+                "min_us": 0.03246,
+                "rounds": 7
+              },
+              "validate": {
+                "iterations_per_round": 50,
+                "max_us": 250.7764,
+                "median_us": 143.29292,
+                "min_us": 127.8955,
+                "rounds": 7
+              }
+            },
+            "tracks": 16
+          },
+          {
+            "obstacles": 128,
+            "points_per_track": 32,
+            "response_bytes": 105838,
+            "stages": {
+              "branch": {
+                "iterations_per_round": 50,
+                "max_us": 953.4596,
+                "median_us": 936.0311800000001,
+                "min_us": 902.41016,
+                "rounds": 7
+              },
+              "prepare": {
+                "iterations_per_round": 50,
+                "max_us": 238.01160000000002,
+                "median_us": 196.12776000000002,
+                "min_us": 170.83714,
+                "rounds": 7
+              },
+              "reconcile": {
+                "iterations_per_round": 50,
+                "max_us": 148.07811999999998,
+                "median_us": 143.50251999999998,
+                "min_us": 106.92228,
+                "rounds": 7
+              },
+              "request_hash": {
+                "iterations_per_round": 1000,
+                "max_us": 0.06063,
+                "median_us": 0.046990000000000004,
+                "min_us": 0.042871,
+                "rounds": 7
+              },
+              "validate": {
+                "iterations_per_round": 50,
+                "max_us": 758.5880400000001,
+                "median_us": 599.7301,
+                "min_us": 559.1100600000001,
+                "rounds": 7
+              }
+            },
+            "tracks": 64
+          }
+        ],
+        "scope": "synthetic adapter CPU benchmark; no PAN2 inference"
+      }
+    ]
+  },
+  "baseline_commit": "b086554c11d4aebb81321cc5f880becd95e4ae39",
+  "rust_version": "1.90.0",
+  "executor": "ruOS Software Factory; shared CPU; no GPU inference",
+  "validation": "full workspace tests, 7 physical integration tests, CLI E2E, Clippy denied-warnings passed"
+}
