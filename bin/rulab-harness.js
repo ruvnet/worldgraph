@@ -26,7 +26,7 @@ export const GATES = Object.freeze([
   { id: 'typecheck', cwd: 'rulab', executable: 'npm', args: ['run', 'typecheck'] },
   { id: 'unit-tests', cwd: 'rulab', executable: 'npm', args: ['test'] },
   { id: 'production-build', cwd: 'rulab', executable: 'npm', args: ['run', 'build'] },
-  { id: 'browser-tests', cwd: 'rulab', executable: 'npm', args: ['run', 'test:e2e'] },
+  { id: 'browser-tests', cwd: 'rulab', executable: 'npm', args: ['run', 'test:e2e'], timeoutMs: 1_800_000 },
 ]);
 
 const record = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -244,7 +244,7 @@ export async function verifyRuLab(argv, options = {}) {
     if (!includeBrowser && gate.id === 'browser-tests') result.reason = 'Browser validation disabled explicitly; physical GPU performance remains unverified.';
     else {
       process.stderr.write(`RuLab validation: ${gate.id}\n`);
-      const execution = await runProcess(commandOf(gate), resolve(root, gate.cwd));
+      const execution = await runProcess(commandOf(gate), resolve(root, gate.cwd), gate.timeoutMs);
       const logFile = join(outputDir, `${gate.id}.log`);
       writeArtifact(logFile, execution.output);
       Object.assign(result, { status: execution.exitCode === 0 ? 'passed' : 'failed', exitCode: execution.exitCode, durationMs: execution.durationMs, reason: execution.reason,
