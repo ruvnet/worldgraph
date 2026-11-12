@@ -1,4 +1,5 @@
-use std::{collections::BTreeMap, time::Duration};
+//! Physical hypothesis invariants and real Unix-socket protocol tests.
+use std::time::Duration;
 use wifi_densepose_worldgraph::{WorldGraph,WorldId,WorldNode,EnuPoint};
 use wifi_densepose_worldmodel::{physical::*,PrivacyDecision,RetentionPolicy,ExternalModelConfig,ExternalModelKind,SidecarConfig,DeploymentPolicy,CancellationToken};
 
@@ -90,5 +91,19 @@ async fn timeout_cancellation_and_provider_admission(){
     m=model();m.weights_path=None;assert!(Pan2PhysicalBridge::new(config(path.clone(),Duration::from_secs(1)),&m).is_err());
     server.abort();std::fs::remove_file(path).unwrap();
     assert_eq!(ExternalModelKind::Pan2.license_policy().license_id,"Apache-2.0");
-    let _unused=BTreeMap::<String,String>::new();
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn oversized_and_unterminated_ipc_responses_reject(){
+    use tokio::{net::UnixListener,io::AsyncWriteExt};
+    let(g,id,ctx)=setup();let s=PreparedPhysicalScene::from_graph(&g,&[id],ctx).unwrap();
+    for case in 0..3 {
+        let path=std::env::temp_dir().join(format!("wg-pan2-wire-{}-{case}.sock",std::process::id()));
+        let listener=UnixListener::bind(&path).unwrap();
+        let bytes=match case{0=>vec![b' ';MAX_PHYSICAL_BYTES+2],1=>b"{}".to_vec(),_=>b"{\"schema_version\":99}\n".to_vec()};
+        let server=tokio::spawn(async move{let(mut socket,_)=listener.accept().await.unwrap();let _=socket.write_all(&bytes).await;});
+        let b=Pan2PhysicalBridge::new(config(path.clone(),Duration::from_secs(1)),&model()).unwrap();
+        assert!(b.predict(&s).await.is_err());server.await.unwrap();std::fs::remove_file(path).unwrap();
+    }
 }
