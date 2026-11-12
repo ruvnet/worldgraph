@@ -1,0 +1,84 @@
+{
+  "format": "worldgraph.simulated.rollout",
+  "version": 1,
+  "name": "Toronto office · Level 3 open office",
+  "simulated": true,
+  "media": {
+    "file": "clip.mp4",
+    "sha256": "07f865d94a8598b36f9f78bdbd873b19e0fb7e02794e0d3ea842667dfec3d05c",
+    "bytes": 1793246,
+    "mediaType": "video/mp4",
+    "width": 1248,
+    "height": 704,
+    "fps": 24,
+    "durationSec": 20.0
+  },
+  "caption": {
+    "file": "caption.json",
+    "sha256": "e771ad1a6b018703daa7ef1e7f09b3f37ac134c5eaf044acab47d0ec775681c0",
+    "bytes": 2668
+  },
+  "envelope": {
+    "schema_version": 1,
+    "session_id": "pan2-w-5",
+    "epoch": 0,
+    "sequence": 0,
+    "chunk": {
+      "frames": [
+        {
+          "transport": "pan2-media",
+          "locator": "pan2-w-5/e0-s0/clip.mp4",
+          "content_hash": "sha256:07f865d94a8598b36f9f78bdbd873b19e0fb7e02794e0d3ea842667dfec3d05c",
+          "byte_length": 1793246,
+          "media_type": "video/mp4"
+        },
+        {
+          "transport": "pan2-media",
+          "locator": "pan2-w-5/e0-s0/caption.json",
+          "content_hash": "sha256:e771ad1a6b018703daa7ef1e7f09b3f37ac134c5eaf044acab47d0ec775681c0",
+          "byte_length": 2668,
+          "media_type": "application/json"
+        },
+        {
+          "transport": "pan2-media",
+          "locator": "pan2-w-5/e0-s0/generation.json",
+          "content_hash": "sha256:7829e85a59a4bf9aaf36da2037bd8a16d0f54965939ff152ce1d23b50221796c",
+          "byte_length": 96,
+          "media_type": "application/json"
+        }
+      ],
+      "provenance": {
+        "provider": "pan2-worker",
+        "model": "IFM/PAN2",
+        "checkpoint": "a7936f7bea20ec3b9de809583712b40693071819",
+        "runtime_version": "ifm-ai/PAN2@0fb907b6e16a82ead6d691d1de2eef6299c71e9a",
+        "source_snapshot_hash": "sha256:1c3439ba5e780a9e2d93072b7af5416d3c286eca62b3d17e8598b7cf9d2e1629",
+        "source_stream_epoch": 503,
+        "prompt_action_hash": "worldgraph:b1d7be25c64b11d5:5289a296dea1a148",
+        "generation_seed": 123,
+        "generation_sequence": 0,
+        "simulated": true,
+        "confidence": 0.0,
+        "privacy": {
+          "projection_id": "spaces:hq-toronto:level-3-open",
+          "hosted_processing_approved": true,
+          "redactions_applied": 0,
+          "retention": "policy_bound"
+        },
+        "license": {
+          "license_id": "Apache-2.0",
+          "usage": "production",
+          "redistribution_allowed": true,
+          "attribution_required": true,
+          "notice": "PAN 2 (MBZUAI IFM) is Apache-2.0; retain its NOTICE and the Qwen3.5 and Wan 2.2 component licenses"
+        }
+      }
+    }
+  },
+  "generation": {
+    "hardware": "NVIDIA H200 NVL",
+    "steps": 50,
+    "seconds": 2373.6,
+    "peakVramGb": 127.9
+  }
+}

@@ -29,6 +29,7 @@ use tokio::{
 use wifi_densepose_worldgraph::{EnuPoint, WorldGraphSnapshot, SCHEMA_VERSION};
 
 use crate::{
+    simulated::{self, SimulatedStore},
     AccessProjector, DefaultAccessPolicy, PresenceUpdate, TwinEnvelope, TwinMessage, TwinReplica,
     ViewerClaims, PROTOCOL_VERSION,
 };
@@ -200,7 +201,9 @@ impl DemoBootstrap {
     }
 }
 
-/// Build `/healthz`, `/v1/twin/ws`, and producer `/v1/twin/envelopes`.
+/// Build `/healthz`, `/v1/twin/ws`, and producer `/v1/twin/envelopes`, plus
+/// the separate simulated-output routes under `/v1/sim/` (see
+/// [`crate::simulated`]) backed by a fresh in-memory [`SimulatedStore`].
 pub fn router(hub: StreamHub, validator: Arc<dyn TokenValidator>) -> Router {
     router_with_demo(hub, validator, None)
 }
@@ -211,6 +214,20 @@ pub fn router_with_demo(
     validator: Arc<dyn TokenValidator>,
     demo: Option<DemoBootstrap>,
 ) -> Router {
+    router_with_simulated(hub, validator, demo, SimulatedStore::new())
+}
+
+/// Build the router over a caller-owned [`SimulatedStore`], so an in-process
+/// provider can publish simulated envelopes that the `/v1/sim/` routes serve.
+/// The store is never reachable from the twin routes, and the hub is never
+/// reachable from the simulated ones.
+pub fn router_with_simulated(
+    hub: StreamHub,
+    validator: Arc<dyn TokenValidator>,
+    demo: Option<DemoBootstrap>,
+    simulated: SimulatedStore,
+) -> Router {
+    let sim_routes = simulated::routes(simulated, Arc::clone(&validator));
     Router::new()
         .route(
             "/healthz",
@@ -225,6 +242,7 @@ pub fn router_with_demo(
             validator,
             demo,
         })
+        .merge(sim_routes)
 }
 
 #[derive(Serialize)]
@@ -274,6 +292,17 @@ fn bearer(headers: &HeaderMap) -> Option<&str> {
         .ok()?
         .strip_prefix("Bearer ")
 }
+/// Validate the request's bearer token and require `scope`. Shared by the twin
+/// producer route and the simulated routes so both enforce one model.
+pub(crate) fn authorize(
+    headers: &HeaderMap,
+    validator: &dyn TokenValidator,
+    scope: &str,
+) -> Option<ViewerClaims> {
+    bearer(headers)
+        .and_then(|token| validator.validate(token, now()).ok())
+        .filter(|claims| claims.has_scope(scope))
+}
 fn now() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -285,8 +314,7 @@ async fn publish(
     headers: HeaderMap,
     Json(envelope): Json<TwinEnvelope>,
 ) -> StatusCode {
-    let claims = bearer(&headers).and_then(|t| state.validator.validate(t, now()).ok());
-    if !claims.is_some_and(|c| c.has_scope("twin:write")) {
+    if authorize(&headers, state.validator.as_ref(), "twin:write").is_none() {
         return StatusCode::UNAUTHORIZED;
     }
     match state.hub.publish(envelope).await {

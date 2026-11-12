@@ -1,0 +1,84 @@
+{
+  "format": "worldgraph.simulated.rollout",
+  "version": 1,
+  "name": "RF door opens",
+  "simulated": true,
+  "media": {
+    "file": "clip.mp4",
+    "sha256": "7b3c31ba148c805511f7ca1815eb84629808da8c89820da00f8279f905fd03d4",
+    "bytes": 1081380,
+    "mediaType": "video/mp4",
+    "width": 1248,
+    "height": 704,
+    "fps": 24,
+    "durationSec": 5.0
+  },
+  "caption": {
+    "file": "caption.json",
+    "sha256": "05502b5e7227543a0e67e855f30d39f646aadf2e87c607ddafc4e0203db4909f",
+    "bytes": 2011
+  },
+  "envelope": {
+    "schema_version": 1,
+    "session_id": "pan2-w-2",
+    "epoch": 0,
+    "sequence": 0,
+    "chunk": {
+      "frames": [
+        {
+          "transport": "pan2-media",
+          "locator": "pan2-w-2/e0-s0/clip.mp4",
+          "content_hash": "sha256:7b3c31ba148c805511f7ca1815eb84629808da8c89820da00f8279f905fd03d4",
+          "byte_length": 1081380,
+          "media_type": "video/mp4"
+        },
+        {
+          "transport": "pan2-media",
+          "locator": "pan2-w-2/e0-s0/caption.json",
+          "content_hash": "sha256:05502b5e7227543a0e67e855f30d39f646aadf2e87c607ddafc4e0203db4909f",
+          "byte_length": 2011,
+          "media_type": "application/json"
+        },
+        {
+          "transport": "pan2-media",
+          "locator": "pan2-w-2/e0-s0/generation.json",
+          "content_hash": "sha256:0281f86f149e8f3593c355c07cfab93ce5de97d7e1188ae25e58284d5c28565b",
+          "byte_length": 94,
+          "media_type": "application/json"
+        }
+      ],
+      "provenance": {
+        "provider": "pan2-worker",
+        "model": "IFM/PAN2",
+        "checkpoint": "a7936f7bea20ec3b9de809583712b40693071819",
+        "runtime_version": "ifm-ai/PAN2@0fb907b6e16a82ead6d691d1de2eef6299c71e9a",
+        "source_snapshot_hash": "sha256:rulab-authored-robotics-v1",
+        "source_stream_epoch": 1,
+        "prompt_action_hash": "worldgraph:70bbf5092a203f92:9a9854204c34fb6c",
+        "generation_seed": 123,
+        "generation_sequence": 0,
+        "simulated": true,
+        "confidence": 0.0,
+        "privacy": {
+          "projection_id": "rulab-public-demo",
+          "hosted_processing_approved": true,
+          "redactions_applied": 0,
+          "retention": "policy_bound"
+        },
+        "license": {
+          "license_id": "Apache-2.0",
+          "usage": "production",
+          "redistribution_allowed": true,
+          "attribution_required": true,
+          "notice": "PAN 2 (MBZUAI IFM) is Apache-2.0; retain its NOTICE and the Qwen3.5 and Wan 2.2 component licenses"
+        }
+      }
+    }
+  },
+  "generation": {
+    "hardware": "NVIDIA H200 NVL",
+    "steps": 50,
+    "seconds": 497.4,
+    "peakVramGb": 86.2
+  }
+}

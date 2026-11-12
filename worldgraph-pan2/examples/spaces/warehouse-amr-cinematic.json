@@ -1,0 +1,173 @@
+{
+  "format": "cognitum.spaces.snapshot",
+  "version": 1,
+  "site": {
+    "id": "dc-north",
+    "name": "North distribution centre",
+    "privacy": "P2"
+  },
+  "space": {
+    "id": "pick-hall-a",
+    "name": "Pick hall A",
+    "siteId": "dc-north",
+    "buildingId": "b1",
+    "floorId": "ground",
+    "privacy": "P2",
+    "attributes": {
+      "description": "A vast, tidy warehouse pick hall at golden hour, seen from low beside a yellow charging dock. A green painted robot lane stretches away across polished grey concrete toward a steel packing station with a roller conveyor in the distance. Tall blue and orange pallet racking filled with brown cartons rises along the back wall. A low orange autonomous mobile robot sits parked in the charging dock in the foreground. Dust drifts in the shafts of sunlight. Nobody is in the hall.",
+      "lighting": "Late-afternoon sun pours through high clerestory windows in long golden shafts across a faint haze, while cool teal high-bay light fills the shadows; the polished floor carries warm reflections and the status light of the robot glows against it.",
+      "view": "Low, wide-angle view from knee height at the left end of the green lane beside the charging dock, looking down the length of the lane toward the packing station, with the pallet racking towering in the background.",
+      "style": "Cinematic film footage shot on an anamorphic lens in one uninterrupted continuous take, with shallow depth of field, soft lens flares, fine film grain and a rich teal-and-amber colour grade.",
+      "camera": [
+        {
+          "atSec": 0,
+          "translation": [
+            0,
+            0.3,
+            0
+          ]
+        },
+        {
+          "atSec": 6.6,
+          "translation": [
+            0.5,
+            0,
+            0
+          ]
+        },
+        {
+          "atSec": 13.3,
+          "zoom": 0.3
+        }
+      ]
+    }
+  },
+  "zones": [
+    {
+      "id": "zone-charge",
+      "name": "charging bay",
+      "siteId": "dc-north",
+      "spaceId": "pick-hall-a",
+      "attributes": {
+        "centerM": [
+          -6.0,
+          3.0,
+          0.6
+        ],
+        "sizeM": [
+          1.6,
+          1.6,
+          1.2
+        ],
+        "class": "charging dock"
+      }
+    },
+    {
+      "id": "zone-racks",
+      "name": "racking aisle",
+      "siteId": "dc-north",
+      "spaceId": "pick-hall-a",
+      "attributes": {
+        "centerM": [
+          0.0,
+          8.0,
+          3.0
+        ],
+        "sizeM": [
+          12.0,
+          1.2,
+          6.0
+        ],
+        "class": "pallet racking"
+      }
+    },
+    {
+      "id": "zone-pack",
+      "name": "packing station",
+      "siteId": "dc-north",
+      "spaceId": "pick-hall-a",
+      "attributes": {
+        "centerM": [
+          6.0,
+          3.0,
+          0.5
+        ],
+        "sizeM": [
+          2.4,
+          1.2,
+          1.0
+        ],
+        "class": "packing station"
+      }
+    }
+  ],
+  "entities": [
+    {
+      "id": "amr-07",
+      "name": "Mobile robot",
+      "entityType": "object",
+      "siteId": "dc-north",
+      "spaceId": "pick-hall-a",
+      "zoneId": "zone-charge",
+      "attributes": {
+        "appearance": "Low, flat orange autonomous mobile robot with a black top deck, a blue status light strip and four small wheels."
+      }
+    },
+    {
+      "id": "csi-node-3",
+      "name": "RF sensing node",
+      "entityType": "sensor",
+      "siteId": "dc-north",
+      "spaceId": "pick-hall-a",
+      "zoneId": "zone-racks",
+      "attributes": {}
+    }
+  ],
+  "events": [
+    {
+      "id": "evt-9001",
+      "eventType": "robot.undocked",
+      "eventSequence": 9001,
+      "observedAt": "2026-11-10T14:02:05Z",
+      "siteId": "dc-north",
+      "spaceId": "pick-hall-a",
+      "zoneId": "zone-charge",
+      "confidence": 0.94,
+      "attributes": {
+        "entityId": "amr-07",
+        "narrative": "The status light of the robot brightens and it backs slowly out of the yellow charging dock onto the green lane as the camera eases forward.",
+        "action": "backs slowly out of the charging dock onto the green lane."
+      }
+    },
+    {
+      "id": "evt-9002",
+      "eventType": "zone.transit",
+      "eventSequence": 9002,
+      "observedAt": "2026-11-10T14:02:19Z",
+      "siteId": "dc-north",
+      "spaceId": "pick-hall-a",
+      "zoneId": "zone-racks",
+      "confidence": 0.91,
+      "attributes": {
+        "entityId": "amr-07",
+        "narrative": "The robot turns and glides away along the green lane through the shafts of sunlight, passing in front of the pallet racking, while the camera tracks alongside it.",
+        "action": "glides along the green lane through the shafts of sunlight, past the racking."
+      }
+    },
+    {
+      "id": "evt-9003",
+      "eventType": "robot.arrived",
+      "eventSequence": 9003,
+      "observedAt": "2026-11-10T14:02:41Z",
+      "siteId": "dc-north",
+      "spaceId": "pick-hall-a",
+      "zoneId": "zone-pack",
+      "confidence": 0.96,
+      "attributes": {
+        "entityId": "amr-07",
+        "narrative": "The robot slows as it reaches the packing station and stops beside the roller conveyor, its status light turning green, as the camera pushes in on it.",
+        "action": "slows and stops beside the roller conveyor at the packing station."
+      }
+    }
+  ]
+}

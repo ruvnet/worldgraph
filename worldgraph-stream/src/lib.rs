@@ -7,6 +7,8 @@ mod protocol;
 
 #[cfg(feature = "server")]
 pub mod server;
+#[cfg(feature = "server")]
+pub mod simulated;
 
 pub use access::{AccessProjector, DefaultAccessPolicy, TwinAccessPolicy, ViewerClaims};
 pub use protocol::{

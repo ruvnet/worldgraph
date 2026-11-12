@@ -17,10 +17,12 @@ const toolRequest = (name, args) => ({ jsonrpc: '2.0', id: 2, method: 'tools/cal
 const planArgs = { objective: 'Build replayable RuLab', scope: 'rulab-4d', deployment: 'github-pages' };
 const commandOf = (g) => ({ executable: g.executable, args: [...g.args], cwd: g.cwd });
 const captureFiles = ['capture.json', 'frame-000.splat', 'frame-001.splat', 'frame-002.splat', 'frame-003.splat'];
+// Fixed bundled synthetic rollout (ADR-204), in the collector's sorted output order.
+const simulatedFiles = ['simulated/index.json', 'simulated/synthetic-example/caption.json', 'simulated/synthetic-example/clip.mp4', 'simulated/synthetic-example/rollout.json'];
 function reportFixture() {
   return { schemaVersion: 1, scope: 'rulab-4d', generatedAt: '2026-09-06T20:00:00.000Z', source: { commit: 'a'.repeat(40), dirty: false, packageVersion: PACKAGE_VERSION, location: 'checkout' },
     gates: GATES.map((g) => ({ id: g.id, status: 'passed', command: commandOf(g), exitCode: 0, durationMs: 123, reason: '', log: { path: `.artifacts/rulab/${g.id}.log`, sha256: 'b'.repeat(64), bytes: 30, truncated: false } })),
-    artifacts: ['index.html', 'assets/app.js', 'assets/app.css', 'wasm/worldgraph_wasm.js', 'wasm/worldgraph_wasm_bg.wasm', ...captureFiles.map((name) => `capture-example/${name}`)].map((path) => ({ path: `rulab/dist/${path}`, sha256: 'c'.repeat(64), bytes: 1000 })), summary: { passed: GATES.length, failed: 0, skipped: 0, complete: true } };
+    artifacts: ['index.html', 'assets/app.js', 'assets/app.css', 'wasm/worldgraph_wasm.js', 'wasm/worldgraph_wasm_bg.wasm', ...captureFiles.map((name) => `capture-example/${name}`), ...simulatedFiles].map((path) => ({ path: `rulab/dist/${path}`, sha256: 'c'.repeat(64), bytes: 1000 })), summary: { passed: GATES.length, failed: 0, skipped: 0, complete: true } };
 }
 async function transport(chunks) {
   const output = new PassThrough(); let text = '';
@@ -175,7 +177,7 @@ test('report output refuses symlinked directories and replaces file symlinks wit
 
 function checkoutFixture() {
   const directory = mkdtempSync(join(tmpdir(), 'worldgraph-acceptance-'));
-  for (const path of ['worldgraph-wasm', 'rulab/dist/assets', 'rulab/dist/wasm', 'rulab/dist/capture-example']) mkdirSync(join(directory, path), { recursive: true });
+  for (const path of ['worldgraph-wasm', 'rulab/dist/assets', 'rulab/dist/wasm', 'rulab/dist/capture-example', 'rulab/dist/simulated/synthetic-example']) mkdirSync(join(directory, path), { recursive: true });
   writeFileSync(join(directory, '.gitignore'), '.artifacts/\nrulab/dist/\n');
   writeFileSync(join(directory, 'Cargo.toml'), '[workspace]\n');
   writeFileSync(join(directory, 'rulab/package.json'), '{}\n');
@@ -193,6 +195,13 @@ function checkoutFixture() {
     return { time, file, sha256: createHash('sha256').update(bytes).digest('hex') };
   });
   writeFileSync(join(directory, 'rulab/dist/capture-example/capture.json'), JSON.stringify({ format: 'worldgraph.rulab.capture', version: 1, name: 'Synthetic harness fixture', source: 'synthetic', coordinateSystem: 'right-handed-y-up', units: 'metres', duration: 3, bounds: { min: [-1, -1, -1], max: [4, 1, 1] }, frames }));
+  // Stand-in rollout bytes: the collector hashes these files; it does not parse or play them.
+  const clip = Buffer.from('fixture rollout clip bytes'), caption = Buffer.from('{"prompt":"fixture"}\n');
+  const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
+  writeFileSync(join(directory, 'rulab/dist/simulated/synthetic-example/clip.mp4'), clip);
+  writeFileSync(join(directory, 'rulab/dist/simulated/synthetic-example/caption.json'), caption);
+  writeFileSync(join(directory, 'rulab/dist/simulated/synthetic-example/rollout.json'), JSON.stringify({ format: 'worldgraph.simulated.rollout', version: 1, name: 'Synthetic harness fixture', simulated: true, media: { file: 'clip.mp4', sha256: digest(clip), bytes: clip.length }, caption: { file: 'caption.json', sha256: digest(caption), bytes: caption.length } }));
+  writeFileSync(join(directory, 'rulab/dist/simulated/index.json'), JSON.stringify({ format: 'worldgraph.simulated.index', version: 1, rollouts: [{ id: 'synthetic-example', path: 'synthetic-example/rollout.json' }] }));
   for (const args of [['init', '--quiet'], ['add', '.gitignore', 'Cargo.toml', 'rulab/package.json'], ['-c', 'user.name=Harness Test', '-c', 'user.email=harness@example.invalid', 'commit', '--quiet', '-m', 'fixture']]) {
     const result = spawnSync('git', args, { cwd: directory, encoding: 'utf8' });
     assert.equal(result.status, 0, result.stderr);
@@ -241,7 +250,7 @@ test('runner hashes shipped JS, CSS, WASM and capture sample and rejects missing
   try {
     const complete = runAcceptanceFixture(directory);
     assert.equal(complete.status, 0, complete.stderr);
-    assert.deepEqual(complete.report.artifacts.map((a) => a.path), ['rulab/dist/assets/app.css', 'rulab/dist/assets/app.js', ...captureFiles.map((file) => `rulab/dist/capture-example/${file}`), 'rulab/dist/index.html', 'rulab/dist/wasm/worldgraph_wasm.js', 'rulab/dist/wasm/worldgraph_wasm_bg.wasm']);
+    assert.deepEqual(complete.report.artifacts.map((a) => a.path), ['rulab/dist/assets/app.css', 'rulab/dist/assets/app.js', ...captureFiles.map((file) => `rulab/dist/capture-example/${file}`), 'rulab/dist/index.html', ...simulatedFiles.map((file) => `rulab/dist/${file}`), 'rulab/dist/wasm/worldgraph_wasm.js', 'rulab/dist/wasm/worldgraph_wasm_bg.wasm']);
     for (const artifact of complete.report.artifacts) {
       const bytes = readFileSync(join(directory, artifact.path));
       assert.equal(artifact.bytes, bytes.length);
@@ -273,6 +282,36 @@ test('each bundled capture file is required even when every execution gate passe
       writeFileSync(join(directory, path), bytes);
     }
     assert.equal(runAcceptanceFixture(directory).status, 0);
+  } finally { rmSync(directory, { recursive: true, force: true }); }
+});
+
+test('each bundled simulated rollout file is required and the fixed list stays within the artifact cap', () => {
+  const directory = checkoutFixture();
+  try {
+    const complete = runAcceptanceFixture(directory);
+    assert.equal(complete.status, 0, complete.stderr);
+    // HTML, one JS, one CSS, the WASM pair, five capture files and four rollout files.
+    assert.equal(complete.report.artifacts.length, 14);
+    assert.ok(complete.report.artifacts.length <= 16);
+    for (const file of simulatedFiles) {
+      const path = `rulab/dist/${file}`, bytes = readFileSync(join(directory, path));
+      rmSync(join(directory, path));
+      const missing = runAcceptanceFixture(directory);
+      assert.equal(missing.status, 1, file);
+      assert.equal(missing.report.summary.complete, true);
+      assert.equal(missing.diagnostic.accepted, false);
+      assert.ok(validateEvidence({ report: missing.report }).issues.includes(`Required static artifact missing: ${path}.`));
+      writeFileSync(join(directory, path), bytes);
+    }
+    assert.equal(runAcceptanceFixture(directory).status, 0);
+    // A rollout added to the index later is not followed: evidence stays a fixed list.
+    mkdirSync(join(directory, 'rulab/dist/simulated/later-rollout'), { recursive: true });
+    writeFileSync(join(directory, 'rulab/dist/simulated/later-rollout/clip.mp4'), 'later');
+    writeFileSync(join(directory, 'rulab/dist/simulated/index.json'), JSON.stringify({ format: 'worldgraph.simulated.index', version: 1, rollouts: [{ id: 'synthetic-example', path: 'synthetic-example/rollout.json' }, { id: 'later-rollout', path: 'later-rollout/rollout.json' }] }));
+    const extended = runAcceptanceFixture(directory);
+    assert.equal(extended.status, 0, extended.stderr);
+    assert.equal(extended.report.artifacts.length, 14);
+    assert.ok(!extended.report.artifacts.some((artifact) => artifact.path.includes('later-rollout')));
   } finally { rmSync(directory, { recursive: true, force: true }); }
 });
 

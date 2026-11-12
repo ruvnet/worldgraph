@@ -1,0 +1,64 @@
+{
+  "format": "worldgraph.simulated.rollout",
+  "version": 1,
+  "name": "Synthetic test pattern (not model output)",
+  "simulated": true,
+  "media": {
+    "file": "clip.mp4",
+    "sha256": "8d68eb320247dcb96c7da7923346b202705e257c39cb72f04048a4cb3eb875cd",
+    "bytes": 39974,
+    "mediaType": "video/mp4",
+    "width": 320,
+    "height": 180,
+    "fps": 24,
+    "durationSec": 2
+  },
+  "caption": {
+    "file": "caption.json",
+    "sha256": "1c8ba238843c0d52fab26389964b88531139dba05c1eb0d1f64505319af074ae",
+    "bytes": 456
+  },
+  "envelope": {
+    "schema_version": 1,
+    "session_id": "mock-1",
+    "epoch": 0,
+    "sequence": 0,
+    "chunk": {
+      "frames": [
+        {
+          "transport": "file",
+          "locator": "clip.mp4",
+          "content_hash": "sha256:8d68eb320247dcb96c7da7923346b202705e257c39cb72f04048a4cb3eb875cd",
+          "byte_length": 39974,
+          "media_type": "video/mp4"
+        }
+      ],
+      "provenance": {
+        "provider": "mock",
+        "model": "deterministic-fixture",
+        "checkpoint": "builtin-v1",
+        "runtime_version": "ffmpeg-testsrc2-fixture",
+        "source_snapshot_hash": "none:synthetic-fixture-has-no-source-snapshot",
+        "source_stream_epoch": 0,
+        "prompt_action_hash": "sha256:1c8ba238843c0d52fab26389964b88531139dba05c1eb0d1f64505319af074ae",
+        "generation_seed": 0,
+        "generation_sequence": 0,
+        "simulated": true,
+        "confidence": 0,
+        "privacy": {
+          "projection_id": "synthetic-fixture-no-scene-data",
+          "hosted_processing_approved": false,
+          "redactions_applied": 0,
+          "retention": "policy_bound"
+        },
+        "license": {
+          "license_id": "MIT OR Apache-2.0",
+          "usage": "production",
+          "redistribution_allowed": true,
+          "attribution_required": false,
+          "notice": "FFmpeg testsrc2 pattern written by scripts/create-simulated-rollout-example.mjs. Not model output."
+        }
+      }
+    }
+  }
+}
