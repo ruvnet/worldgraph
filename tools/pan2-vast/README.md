@@ -130,6 +130,10 @@ Before promotion, evaluate a held out prompt suite with your task specific toler
 
 This kit produces model experiment artifacts. It does not publish inferred positions or forces into WorldGraph, mutate RuView observations, or supply a calibrated state extractor. Carry accepted hypotheses into the existing forecast branch integration only after its extractor and metric validation are implemented.
 
+## Cost and hardware validation plan
+
+See the [staged quantization cost plan](../../docs/mission/pan2-quantization-cost-plan.md) for hardware trials, proposed spending caps, quality gates, break even calculations, required instrumentation and cost per accepted output. Savings remain unmeasured. The current matrix requires a BF16 control on each GPU; smaller hardware may require the planned single variant runner first.
+
 ## Source provenance
 
 PAN2 source: https://github.com/ifm-ai/PAN2/tree/0fb907b6e16a82ead6d691d1de2eef6299c71e9a
