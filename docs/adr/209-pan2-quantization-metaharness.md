@@ -73,6 +73,16 @@ Decisions taken:
 3. **Quality gate.** `python -m pan2kit gate` compares a clip with the BF16 clip by SSIM and PSNR and fails below 0.85 or 24 dB. The thresholds sit between the measured INT8 and INT4 results. It stops obviously broken variants early; it is similarity for one case, not perceptual or physical validation. The 30 case evaluator remains the decision gate.
 4. **Metaharness gap.** `group` and `int8` are not yet variant fields in the plan, so two INT4 variants of one case would collide in the evaluator's (case, bits) pairing. Until that is fixed, group sweeps run through the worker directly.
 
-Pending: group-wise INT4 and mixed precision results on a 5090, the larger size runs (17 frames, 480x832) that INT4's memory headroom might allow, and the 30 case evaluation.
+Update 2026-11-12 (RTX 5090, SDPA, released sampler: 50 steps, flow shift 9, guidance 2.5). The earlier "INT4 fails" and "garbage" verdicts used a plain sentence prompt and 4 to 10 steps. Upstream expects the structured caption the crate compiles (`caption_dump` example); with it every precision is coherent. Scene: one second door scene, seed 42, INT8 as the stand-in reference (no BF16 clip was made for this scene).
+
+| Variant | Size | vs INT8 SSIM | vs INT8 PSNR | Gate | GPU peak |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| INT8 | 25 f, 256x448 | reference | reference | n/a | 32.4 GB |
+| INT4 group 32 | 25 f, 256x448 | 0.906 | 29.2 dB | pass | 21.1 GB |
+| INT4 group 128 | 25 f, 256x448 | 0.883 | 27.1 dB | pass | 18.5 GB |
+| INT4 group 128 | 25 f, 480x832 | not compared | not compared | coherent on inspection | 19.2 GB, 129 s |
+| INT4 group 128 | 49 f, 480x832 | not compared | not compared | coherent on inspection | 20.0 GB, 160 s |
+
+Limits: one prompt and seed; INT8 is not BF16; the door does not open in any clip, so action following is untested; the 30 case evaluation is still the decision gate. Per class sensitivity was not run (only qkv alone at INT4 was, under the wrong prompt). Candidate service default: INT4 group 128, caps raised toward 49 frames at 480x832.
 
 See [ADR 210](210-pan2-serverless-service.md), [usage](../../tools/pan2-vast/METAHARNESS.md), [cost plan](../mission/pan2-quantization-cost-plan.md) and [ADR 207](207-pan2-physical-hypotheses.md).
