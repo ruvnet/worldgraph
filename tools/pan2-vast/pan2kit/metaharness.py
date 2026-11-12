@@ -100,7 +100,7 @@ def make_plan(config, base):
                                'vae': vae_hash, 'training': training_hash})
                 jobs.append({'id': vid + '_' + pid + '_' + str(seed), 'variant': vid,
                              'case_sha256': case, 'repo': repo, 'vae': vae,
-                             'checkpoint': checkpoint, 'bits': bits, 'prompt': text,
+                             'checkpoint': checkpoint, 'assets_manifest': assets, 'bits': bits, 'prompt': text,
                              'seed': seed, 'training_config': training,
                              'timeout_seconds': timeout, **settings})
     order_seed = integer(config.get('order_seed', 42), 'order seed')

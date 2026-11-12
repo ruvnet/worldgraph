@@ -10,13 +10,16 @@ def sha(path):
     return h.hexdigest()
 
 def main():
-    p=argparse.ArgumentParser(); p.add_argument('--repo',required=True); p.add_argument('--bits',type=int,choices=[0,4,8],required=True); p.add_argument('--receipt',required=True); p.add_argument('--export-quant',action='store_true')
+    p=argparse.ArgumentParser(); p.add_argument('--repo',required=True); p.add_argument('--bits',type=int,choices=[0,4,8],required=True); p.add_argument('--receipt',required=True); p.add_argument('--export-quant',action='store_true'); p.add_argument('--assets-manifest')
     args, native=p.parse_known_args()
     repo=Path(args.repo).resolve(); sys.path.insert(0,str(repo)); os.chdir(repo)
     spec=importlib.util.spec_from_file_location('pan_native_generate',repo/'generate.py')
     gen=importlib.util.module_from_spec(spec); spec.loader.exec_module(gen)
     original=gen.load_transformer_weights
     report={'torch_version':torch.__version__,'cuda_version':torch.version.cuda,'gpu':torch.cuda.get_device_name(0),'vram_bytes':torch.cuda.get_device_properties(0).total_memory,'status':'running','bits':args.bits,'quality_validation':'pending'}
+    if args.assets_manifest:
+        from pan2kit.assets import verify_encoder
+        report['encoder_snapshot']=verify_encoder(args.assets_manifest)
     def load(pipe,*a,**kw):
         phase=time.monotonic()
         result=original(pipe,*a,**kw)

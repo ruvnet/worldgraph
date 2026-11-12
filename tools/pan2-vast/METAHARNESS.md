@@ -31,7 +31,7 @@ Resume requires the identical plan, unchanged inputs, and unchanged successful o
 
 ## Smaller GPU trials
 
-Create a second config with only base_int8 or base_int4 in variants and the same prompt, seed, checkpoint, asset revisions and generation settings. A quantized only run does not try to load BF16 on the smaller GPU. Match its case hashes with the H200 BF16 evidence. Copy original asset revision receipts between machines, or use equivalent revision entries; absolute snapshot paths are excluded from comparison identity. Local VAE bytes and canonical checkpoint hashes must still match.
+Create a second config with only base_int8 or base_int4 in variants and the same prompt, seed, checkpoint, asset revisions and generation settings. A quantized only run does not try to load BF16 on the smaller GPU. Match its case hashes with the H200 BF16 evidence. Copy original asset revision receipts between machines, or use equivalent revision entries; absolute snapshot paths are excluded from comparison identity. Before inference the worker also rejects an offline Qwen main cache whose selected snapshot differs from the declared revision. Local VAE bytes and canonical checkpoint hashes must still match.
 
 For a single job from a generated plan:
 

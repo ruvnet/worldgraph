@@ -40,6 +40,18 @@ def reviews_for(root):
 
 
 class HarnessTests(unittest.TestCase):
+    def test_encoder_revision_mismatch_rejected(self):
+        import sys
+        from types import SimpleNamespace
+        from pan2kit.assets import verify_encoder
+        with tempfile.TemporaryDirectory() as d:
+            p=Path(d)/'assets.json'
+            p.write_text(json.dumps({'Qwen/Qwen3.5-9B':{'revision':'expected'}}))
+            with patch.dict(sys.modules,{'huggingface_hub':SimpleNamespace(snapshot_download=lambda *a,**kw:'/cache/other')}):
+                with self.assertRaises(ValueError): verify_encoder(p)
+            with patch.dict(sys.modules,{'huggingface_hub':SimpleNamespace(snapshot_download=lambda *a,**kw:'/cache/expected')}):
+                self.assertEqual(verify_encoder(p)['revision'],'expected')
+
     def test_unique_seeded_schedule_and_quant_only_command(self):
         with tempfile.TemporaryDirectory() as d:
             root=Path(d); cfg=fixture(root,bits=(4,8))

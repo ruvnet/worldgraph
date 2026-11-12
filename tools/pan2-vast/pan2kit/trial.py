@@ -46,6 +46,7 @@ def command(job, output):
     for key, flag in [('frames', '--video_length'), ('height', '--video_height'),
                       ('width', '--video_width'), ('steps', '--num_inference_steps')]:
         args += [flag, str(job[key])]
+    args += ['--assets-manifest', job['assets_manifest']]
     if job.get('training_config'):
         args += ['--training_config', job['training_config']]
     return args

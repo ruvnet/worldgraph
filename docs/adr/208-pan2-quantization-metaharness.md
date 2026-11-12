@@ -20,7 +20,7 @@ Six instead of eight launches removes 25% of scheduled jobs. This is not a measu
 
 A versioned config binds pinned source, canonical checkpoint hashes, prompt files, seeds, settings, training configuration, VAE content and encoder snapshot revisions. Limits are 12 variants, 100 prompts, 16 seeds, 512 jobs and one day per worker. Only BF16, INT8 and INT4 modes are admitted. No shell command text comes from the config. IDs cannot traverse paths.
 
-Case hashes include checkpoint and workload identity, excluding precision and hardware so matching cases can be compared across representations and machines. Snapshot revision identities exclude machine specific paths. A seeded shuffle controls order. Quantized only plans and single trials do not implicitly schedule a BF16 control.
+Case hashes include checkpoint and workload identity, excluding precision and hardware so matching cases can be compared across representations and machines. Snapshot revision identities exclude machine specific paths. The worker verifies the offline Qwen main cache selects the declared snapshot revision; mismatch rejects inference. A seeded shuffle controls order. Quantized only plans and single trials do not implicitly schedule a BF16 control.
 
 States are running, completed, budget_stopped, failed and interrupted. Attempts are recorded before launch, timeout kills the worker process group, and any failure stops the suite. A local exclusive lock prevents concurrent resumes against one output. Scheduling reserves timeout times quoted hourly rate before launch, including declared overhead. This is an estimated scheduling limit, not a financial cap on an independently billing Vast rental.
 

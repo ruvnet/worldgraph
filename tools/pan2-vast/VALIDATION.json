@@ -22,7 +22,8 @@
     "worker timeout process group cleanup",
     "hash bound resume and tamper rejection",
     "paired 100 case actual cost and quality decision",
-    "small sample inconclusive decision"
+    "small sample inconclusive decision",
+    "offline encoder revision mismatch rejection"
   ],
   "not_run": [
     "PAN2 GPU inference",
@@ -33,5 +34,6 @@
   ],
   "native_source_commit": "0fb907b6e16a82ead6d691d1de2eef6299c71e9a",
   "rust_editor_source_commit": "812695581339bfae5b7e615d0866fa855b2f26c1",
-  "clean_ci_dependency_fix": "Declare NumPy explicitly for safetensors packed export; CI rerun required"
+  "clean_ci_dependency_fix": "Declare NumPy explicitly for safetensors packed export; CI rerun required",
+  "metaharness_tests_passed_after_final_changes": 8
 }
