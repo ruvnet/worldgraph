@@ -2,7 +2,7 @@
   ".gitignore": "e7cbd2bd4a03c92e3b346cb6eff399c48e5e15b225e139282e8f4ac8d76e4f64",
   "METAHARNESS.md": "cd4c9cf8fc345dbefa115911d3beb811f797e29900f8e50cc820bad57baee3c5",
   "README.md": "510833fd335f2b267f027aede35b31258c50d1e13aa285d503581801a97c1864",
-  "VALIDATION.json": "a25ce598b5633939d85695b26e3daefe0b454b550dfade4a5973918ec250bc9e",
+  "VALIDATION.json": "9a623ba459bed77908c3d7688d0e1f04e6e2b65406ff53776bbdb2d1db1d8639",
   "bootstrap.sh": "86119cfb9ac860a4bfe77fedeae5431928310eb732f09756ebdd0347b5043809",
   "make_patch.py": "b2ed548bc0ecff5dc95db70641847e2fb7fe928d203bf9cb2a918ae819b7e881",
   "metaharness.example.json": "d8a19411047fb5edbda7c9aa9477a23c34bcd924e94e6273bbb6bd6531c79a56",
@@ -14,6 +14,7 @@
   "pan2kit/worker.py": "f2c02d4b781cc3331c2969ed03a051926a83cf0bc4bc90c64420c9d0136b76a9",
   "prepare_models.py": "8b791d79617160da77d858a687ab0a54caa076ff88fa5f626317a4714a9f59a8",
   "prompt.txt": "38a4cf40696f7a0cb1d35810514c9ca9734f32f91cf5db3e6def6a8d2b17b26b",
+  "requirements-cpu.txt": "ac1d81c830c4f194a3d6545c130c3c747100a58d59a688b32551694fade29d02",
   "tests/test_cli.py": "042d0e51aae380d5eadcb72dbd5f95649daf55c576a5af878080d28eab77e410",
   "tests/test_metaharness.py": "2ed34ffa8e35fbda35c92c2650db435f2ff0a500c419c0ae11786a0c5ca71a38",
   "tests/test_quant.py": "4904777c2d55e7bdb127653e74909a065336de7b3af179043bb17f880da14a33"
