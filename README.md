@@ -158,6 +158,13 @@ python3 scripts/pan2-e2e.py
 Fixture E2E validates the adapter and graph invariants. It does not establish PAN2
 inference, metric extraction accuracy, physical correctness or forecasting gains.
 
+For separately operated NVIDIA GPU experiments, see the optional
+[Vast GPU and WSP kit](tools/pan2-vast/README.md). It compares original and
+edited BF16 checkpoints against INT8 or packed INT4 storage, records provenance
+and memory measurements, and supports exact WSP rollback. CPU validation does not
+establish GPU compatibility or physical accuracy. The runner does not supply the
+calibrated metric extractor required by the Rust adapter.
+
 ## Build
 
 ```bash
@@ -193,3 +200,4 @@ boundaries.
 ## License
 
 Dual-licensed **MIT OR Apache-2.0** — see [`LICENSE-MIT`](./LICENSE-MIT) and [`LICENSE-APACHE`](./LICENSE-APACHE).
+

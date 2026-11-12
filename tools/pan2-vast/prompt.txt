@@ -1,0 +1,1 @@
+A fixed camera observes a single red ball descending onto a flat rigid floor. The ball touches the floor, rebounds, and descends again. Keep one ball, a stationary floor and continuous motion. No cuts, text or camera movement.

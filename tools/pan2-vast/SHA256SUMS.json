@@ -1,0 +1,14 @@
+{
+  "README.md": "15ce01e294df41e02829acbdfe21961d779be351636edd2686d55ec6ec4f8d2f",
+  "VALIDATION.json": "8e27faec82af79d66706fbe1cd37ee8225e9036a21d7833d2d50f2f3d254f281",
+  "bootstrap.sh": "86119cfb9ac860a4bfe77fedeae5431928310eb732f09756ebdd0347b5043809",
+  "make_patch.py": "b2ed548bc0ecff5dc95db70641847e2fb7fe928d203bf9cb2a918ae819b7e881",
+  "pan2kit/__init__.py": "90ef5c96691ce9629dbf7288fd9adfc92d7a0467406088f4d6ff57b584bb0e9e",
+  "pan2kit/__main__.py": "21fdc0fa3240261b42a93c58ad34c93e594cfd4d196df9a6e73c3b5054f420fb",
+  "pan2kit/quant.py": "eb7e325baa2ceeeef7aeb436332860cd4ca429b455a0bb6103286d7b68faa39e",
+  "pan2kit/worker.py": "ec9ff52cf7f38d66606f41c8ae919c356a986eb50b347a9a7714cfb8ccbb67af",
+  "prepare_models.py": "8b791d79617160da77d858a687ab0a54caa076ff88fa5f626317a4714a9f59a8",
+  "prompt.txt": "38a4cf40696f7a0cb1d35810514c9ca9734f32f91cf5db3e6def6a8d2b17b26b",
+  "tests/test_cli.py": "042d0e51aae380d5eadcb72dbd5f95649daf55c576a5af878080d28eab77e410",
+  "tests/test_quant.py": "4904777c2d55e7bdb127653e74909a065336de7b3af179043bb17f880da14a33"
+}
