@@ -27,6 +27,7 @@
 //! * [`media`] — hashing and descriptor verification for the media channel.
 //! * [`bundle`], [`projection`], [`spaces`] — the three places a verified
 //!   rollout can go.
+//! * `vast` (feature `vast`, ADR-210) — a renderer that calls a Vast.ai serverless endpoint.
 //! * [`pipeline`] — the end-to-end client flow used by the `pan2-rollout` tool.
 //!
 //! A rollout is a prediction. Nothing in this crate labels it as a capture,
@@ -46,6 +47,8 @@ pub mod projection;
 pub mod renderer;
 pub mod spaces;
 pub mod spaces_scene;
+#[cfg(feature = "vast")]
+pub mod vast;
 pub mod worker;
 
 pub use error::Pan2Error;

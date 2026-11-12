@@ -12,6 +12,8 @@ repository.workspace = true
 default = []
 # HTTPS client for publishing rollout events to the Cognitum Spaces API.
 spaces-http = ["dep:reqwest"]
+# Renderer that calls a Vast.ai serverless endpoint (ADR-210).
+vast = ["dep:reqwest", "dep:base64"]
 
 [dependencies]
 serde = { workspace = true, features = ["derive"] }
@@ -22,6 +24,7 @@ tokio = { version = "1", features = ["net", "io-util", "macros", "rt-multi-threa
 wifi-densepose-worldmodel = { version = "0.4.0", path = "../wifi-densepose-worldmodel" }
 wifi-densepose-worldgraph = { version = "0.3.2", path = "../wifi-densepose-worldgraph" }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"], optional = true }
+base64 = { version = "0.22", optional = true }
 
 [dev-dependencies]
 criterion = { version = "0.5", default-features = false, features = ["cargo_bench_support"] }
