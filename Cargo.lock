@@ -2200,6 +2200,7 @@ version = "0.4.0"
 dependencies = [
  "serde",
  "serde_json",
+ "sha2",
  "thiserror",
  "tokio",
  "wifi-densepose-worldgraph",

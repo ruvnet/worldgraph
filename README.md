@@ -136,6 +136,29 @@ sensor fusion  →  worldgraph (digital twin)  →  semantic / agent layer
 
 Part of the [RuView / wifi-densepose](https://github.com/ruvnet/wifi-densepose) ecosystem (ADR-139).
 
+## PAN2 physical hypotheses
+
+The Rust worldmodel now includes a bounded PAN2 physical-response adapter: project
+selected observed tracks, validate extracted metric trajectories, build a separate
+hypothesis graph, and compare predictions with later sensor observations. It
+checks bounds, speed and segment collisions against supplied occupied boxes.
+Observed tracks remain unchanged. A separately installed PAN2 worker and calibrated
+metric extractor are required for live use; no numeric physics solver or model
+weights are bundled.
+
+See [ADR 207](docs/adr/207-pan2-physical-hypotheses.md) and the
+[prepare/replay/live example](wifi-densepose-worldmodel/examples/pan2_physical.rs).
+Run the synthetic integration and CLI checks with:
+
+```bash
+cargo test -p wifi-densepose-worldmodel --locked
+cargo build -p wifi-densepose-worldmodel --example pan2_physical --locked
+python3 scripts/pan2-e2e.py
+```
+
+Fixture E2E validates the adapter and graph invariants. It does not establish PAN2
+inference, metric extraction accuracy, physical correctness or forecasting gains.
+
 ## Build
 
 ```bash
