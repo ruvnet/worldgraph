@@ -6,7 +6,8 @@ use crate::{ExternalModelConfig, ExternalModelKind, SidecarConfig, WorldModelErr
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{
-    collections::{BTreeMap, BTreeSet},
+    collections::{BTreeMap, BTreeSet, HashMap},
+    sync::Arc,
     time::Duration,
 };
 use wifi_densepose_worldgraph::{SemanticProvenance, WorldGraph, WorldId, WorldNode};
@@ -173,8 +174,11 @@ pub struct Pan2PhysicalRequest {
 /// Immutable prepared projection, bound locally to a specific graph snapshot.
 #[derive(Debug, Clone)]
 pub struct PreparedPhysicalScene {
-    request: Pan2PhysicalRequest,
+    request: Arc<Pan2PhysicalRequest>,
     graph_sha256: String,
+    request_digest: String,
+    wire: Arc<[u8]>,
+    track_index: Arc<BTreeMap<u64, usize>>,
 }
 impl PreparedPhysicalScene {
     /// Project only selected tracks. The caller must authorize IDs and context.
@@ -228,12 +232,16 @@ impl PreparedPhysicalScene {
             context,
             tracks,
         };
-        require(
-            serde_json::to_vec(&request)?.len() < MAX_PHYSICAL_BYTES,
-            "projection exceeds wire limit",
-        )?;
+        let mut wire = serde_json::to_vec(&request)?;
+        require(wire.len() < MAX_PHYSICAL_BYTES, "projection exceeds wire limit")?;
+        let request_digest = hash(&wire);
+        wire.push(b'\n');
+        let track_index = request.tracks.iter().enumerate().map(|(index, track)| (track.track_id, index)).collect();
         Ok(Self {
-            request,
+            request: Arc::new(request),
+            request_digest,
+            wire: wire.into(),
+            track_index: Arc::new(track_index),
             graph_sha256: hash(
                 &graph
                     .to_json()
@@ -247,7 +255,7 @@ impl PreparedPhysicalScene {
     }
     /// Stable content hash binding a response to this exact request.
     pub fn request_sha256(&self) -> Result<String> {
-        digest(&self.request)
+        Ok(self.request_digest.clone())
     }
     /// Validate untrusted extractor JSON before constructing a usable branch.
     pub fn accept_json(&self, bytes: &[u8]) -> Result<PhysicalForecastBranch> {
@@ -257,7 +265,7 @@ impl PreparedPhysicalScene {
         )?;
         let r: Pan2PhysicalResponse = serde_json::from_slice(bytes)?;
         require(
-            r.schema_version == 1 && r.request_sha256 == self.request_sha256()?,
+            r.schema_version == 1 && r.request_sha256 == self.request_digest,
             "response schema or request hash mismatch",
         )?;
         require(
@@ -276,17 +284,14 @@ impl PreparedPhysicalScene {
         let mut seen = BTreeSet::new();
         for t in &r.trajectories {
             require(seen.insert(t.track_id), "duplicate predicted track")?;
-            let seed = self
-                .request
-                .tracks
-                .iter()
-                .find(|s| s.track_id == t.track_id)
-                .ok_or_else(|| WorldModelError::InvalidInput("unknown predicted track".into()))?;
+            let index = self.track_index.get(&t.track_id).ok_or_else(|| WorldModelError::InvalidInput("unknown predicted track".into()))?;
+            let seed = &self.request.tracks[*index];
             require(
                 !t.points.is_empty() && t.points.len() <= 64,
                 "trajectory requires 1..=64 points",
             )?;
             let (mut p, mut at) = (seed.position_m, 0);
+            let (mut swept_min, mut swept_max) = (seed.position_m, seed.position_m);
             for next in &t.points {
                 require(
                     next.offset_ms > at
@@ -300,13 +305,19 @@ impl PreparedPhysicalScene {
                     speed <= ctx.max_speed_mps,
                     "trajectory exceeds speed ceiling",
                 )?;
-                require(
-                    !ctx.obstacles
-                        .iter()
-                        .any(|b| b.intersects(p, next.position_m)),
-                    "trajectory intersects authoritative obstacle",
-                )?;
+                for axis in 0..3 {
+                    swept_min[axis] = swept_min[axis].min(next.position_m[axis]);
+                    swept_max[axis] = swept_max[axis].max(next.position_m[axis]);
+                }
                 (p, at) = (next.position_m, next.offset_ms);
+            }
+            let nearby: Vec<_> = ctx.obstacles.iter().filter(|b| (0..3).all(|axis| b.min[axis] <= swept_max[axis] && b.max[axis] >= swept_min[axis])).collect();
+            if !nearby.is_empty() {
+                let mut previous = seed.position_m;
+                for next in &t.points {
+                    require(!nearby.iter().any(|b| b.intersects(previous, next.position_m)), "trajectory intersects authoritative obstacle")?;
+                    previous = next.position_m;
+                }
             }
         }
         Ok(PhysicalForecastBranch {
@@ -371,6 +382,15 @@ pub struct PhysicalForecastBranch {
     scene: PreparedPhysicalScene,
     response: Pan2PhysicalResponse,
 }
+#[derive(Serialize)]
+struct HypothesisStatement<'a> {
+    #[serde(rename = "type")]
+    kind: &'static str,
+    execution: PhysicalExecution,
+    trajectory: &'a PhysicalTrajectory,
+    request_sha256: &'a str,
+    not_observed: bool,
+}
 impl PhysicalForecastBranch {
     /// Validated response and explicit execution classification.
     pub fn response(&self) -> &Pan2PhysicalResponse {
@@ -388,16 +408,8 @@ impl PhysicalForecastBranch {
         let mut branch =
             WorldGraph::from_json(&bytes).map_err(|e| WorldModelError::Protocol(e.to_string()))?;
         for trajectory in &self.response.trajectories {
-            let source = self
-                .scene
-                .request
-                .tracks
-                .iter()
-                .find(|s| s.track_id == trajectory.track_id)
-                .expect("validated track");
-            let statement = serde_json::to_string(
-                &serde_json::json!({"type":"physical_hypothesis","execution":self.response.execution,"trajectory":trajectory,"request_sha256":self.response.request_sha256,"not_observed":true}),
-            )?;
+            let source = &self.scene.request.tracks[self.scene.track_index[&trajectory.track_id]];
+            let statement = serde_json::to_string(&HypothesisStatement { kind: "physical_hypothesis", execution: self.response.execution, trajectory, request_sha256: &self.response.request_sha256, not_observed: true })?;
             branch.add_semantic_state(
                 statement,
                 0.0,
@@ -440,7 +452,7 @@ impl PhysicalForecastBranch {
             observations.samples.len() == expected,
             "incomplete observation set",
         )?;
-        let mut actual = BTreeMap::new();
+        let mut actual = HashMap::with_capacity(expected);
         for o in &observations.samples {
             require(
                 o.position_m.iter().all(|v| v.is_finite() && v.abs() <= 1e6)
@@ -452,13 +464,7 @@ impl PhysicalForecastBranch {
         }
         let (mut error, mut baseline) = (0.0, 0.0);
         for t in &self.response.trajectories {
-            let seed = self
-                .scene
-                .request
-                .tracks
-                .iter()
-                .find(|s| s.track_id == t.track_id)
-                .expect("validated track");
+            let seed = &self.scene.request.tracks[self.scene.track_index[&t.track_id]];
             for p in &t.points {
                 let observed = actual.get(&(t.track_id, p.offset_ms)).ok_or_else(|| {
                     WorldModelError::InvalidInput("observation tick mismatch".into())
@@ -551,14 +557,8 @@ impl Pan2PhysicalBridge {
                 source,
             })?;
         let (reader, mut writer) = stream.into_split();
-        let mut payload = serde_json::to_vec(scene.request())?;
-        payload.push(b'\n');
-        require(
-            payload.len() <= MAX_PHYSICAL_BYTES,
-            "request exceeds wire limit",
-        )?;
         writer
-            .write_all(&payload)
+            .write_all(&scene.wire)
             .await
             .map_err(|e| WorldModelError::Protocol(e.to_string()))?;
         let mut limited = BufReader::new(reader).take((MAX_PHYSICAL_BYTES + 1) as u64);
