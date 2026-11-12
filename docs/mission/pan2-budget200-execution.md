@@ -27,3 +27,29 @@ No instance was rented, started, stopped or changed. New Vast spend initiated by
 ## Evidence
 
 The Software Factory admission receipt is recorded as a redacted JSON object beside this document. Four new CPU tests cover missing credential refusal without network access, inventory field filtering, redirect refusal and nonleaking remote errors. They pass locally. Previous GPU and accuracy evidence remains pending.
+
+## Smoke-suite result (2026-11-12, H200, run by the operator's Claude Code session)
+
+The user authorized the USD 200 ceiling in chat on 2026-11-11 ("use $200 budget"). The Vast account's credit was USD 97.16 before the run, so the practical ceiling was that balance; only the planned smoke phase (budget_usd 90, overhead 50, compute <= 40) was run.
+
+- Hardware: one NVIDIA H200 (143771 MiB, driver 595.91.07, CUDA 13.2, torch 2.12.1+cu132) rented at about USD 6.87/h, 700 GB disk, destroyed after retrieval of evidence. The Vast credit fell from USD 97.16 to 88.78 (about USD 8.4 actual, all setup, downloads and trials included). The controller's own estimate (USD 53.84) counts the USD 50 overhead reservation, so it is not the bill.
+- Edit and rollback: one WSP edit (+0.01 at index 0 of the first native block matrix); the rollback copy was byte-identical to the base checkpoint (`cmp`).
+- Setting: 9 frames, 256 x 448, 4 steps, seed 42, one prompt. Six unique variants, all completed, seeded shuffled order.
+
+| Variant | Pipeline s | Peak allocated GB | Peak reserved GB | Quantization s (CPU) | Worker total s |
+|---|---|---|---|---|---|
+| base BF16 | 69.3 | 58.6 | 58.7 | 0 | 257 |
+| edited BF16 | 70.6 | 58.6 | 58.7 | 0 | 266 |
+| base INT8 | 57.0 | 31.1 | 31.2 | 80 | 324 |
+| edited INT8 | 46.7 | 31.1 | 31.2 | 84 | 349 |
+| base INT4 | 40.0 | 17.2 | 17.3 | 178 | 406 |
+| edited INT4 | 38.1 | 17.2 | 17.3 | 179 | 407 |
+
+Retained parameter bytes: 58.40 GB (BF16) to 16.35 GB (INT4). Host peak RSS was recorded as 119.5 GiB for every variant, which is the same figure for BF16 and quantized runs, so it looks like a process-wide high-water mark rather than a per-variant saving; do not read it as a CPU-RAM result.
+
+What this does and does not show:
+- The integration runs end to end on a real GPU, and measured peak GPU memory drops about 47% (INT8) and 71% (INT4) at this small resolution, as the integer storage predicts.
+- Pipeline time was lower for the quantized variants here. With one run per variant and a different order, that is not a speed claim; the full worker time (load + CPU quantization + pipeline) is longer for INT8 and INT4.
+- Memory at the upstream defaults (241 frames, 704 x 1248, 50 steps) is not measured; activation memory grows with resolution, so the small-resolution peaks do not prove a 24 GB card fits.
+- Quality is not evaluated. No blinded review exists, quality_validation stays `pending`, and the decision rule needs at least 30 matched cases, so the evaluator would return inconclusive. No billing file was built, so no cost-per-accepted-output figure exists.
+- Not measured: independent NVML total, hardware inventory beyond `nvidia-smi`, and the remaining USD 110 representative-sampling phase (not affordable from the remaining credit).
