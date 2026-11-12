@@ -1,44 +1,57 @@
 """Experimental raw-parameter storage quantization. Dense BF16 compute remains."""
+import json
 import torch
 from torch import nn
 from torch.nn.utils import parametrize
 
 class RowQuant(nn.Module):
-    def __init__(self, bits, width, dtype):
+    """Symmetric integer storage. `group` 0 = one scale per row; N = one scale per N columns of each row."""
+    def __init__(self, bits, width, dtype, group=0):
         super().__init__()
         if bits not in (4, 8): raise ValueError('bits must be 4 or 8')
+        if type(group) is not int or group < 0 or (group and group % 2): raise ValueError('group must be 0 or a positive even integer')
         self.bits, self.width, self.dtype = bits, width, dtype
+        self.group = min(group, width) if group else width
 
     def right_inverse(self, value):
         if value.device.type != 'cpu': raise ValueError('Quantize on CPU before GPU residency')
         limit = 7 if self.bits == 4 else 127
+        g, ng = self.group, -(-self.width // self.group)
         packed = torch.empty((value.shape[0], (self.width + 1)//2 if self.bits == 4 else self.width), dtype=torch.uint8 if self.bits == 4 else torch.int8)
-        scales = torch.empty((value.shape[0], 1), dtype=torch.float32)
+        scales = torch.empty((value.shape[0], ng), dtype=torch.float32)
         rows = max(1, 4_000_000 // self.width)
         for start in range(0, value.shape[0], rows):
             v = value[start:start+rows].float()
             if not torch.isfinite(v).all(): raise ValueError('Nonfinite weights')
-            scale = v.abs().amax(1, keepdim=True) / limit
+            r = v.shape[0]
+            vp = torch.nn.functional.pad(v, (0, ng*g - self.width)).view(r, ng, g)
+            scale = vp.abs().amax(2, keepdim=True) / limit
             scale = torch.where(scale == 0, torch.ones_like(scale), scale)
-            q = (v / scale).round().clamp(-limit, limit).to(torch.int8)
+            q = (vp / scale).round().clamp(-limit, limit).to(torch.int8).view(r, ng*g)[:, :self.width]
             if self.bits == 4:
                 q = (q.to(torch.int16) + 8).to(torch.uint8)
                 if self.width % 2: q = torch.nn.functional.pad(q, (0, 1), value=8)
                 q = q[:, ::2] | (q[:, 1::2] << 4)
-            packed[start:start+len(q)] = q
-            scales[start:start+len(q)] = scale
+            packed[start:start+r] = q
+            scales[start:start+r] = scale.view(r, ng)
         return packed, scales
 
     def forward(self, q, scale):
         if self.bits == 4:
             q = torch.stack((q & 15, q >> 4), dim=-1).flatten(1)[:, :self.width]
             q = q.to(torch.int8) - 8
-        return q.to(self.dtype) * scale.to(self.dtype)
+        scale = scale.to(self.dtype)
+        if scale.shape[1] > 1:
+            scale = scale.repeat_interleave(self.group, dim=1)[:, :self.width]
+        return q.to(self.dtype) * scale
 
 
-def quantize(model, bits):
+def quantize(model, bits, group=0, int8=()):
+    """Quantize every 2-D float matrix under `blocks.`. `group` sets the scale group (0 = per row).
+    Matrices whose name contains any string in `int8` are stored at 8 bits instead (mixed precision)."""
     if any(parametrize.is_parametrized(m) for m in model.modules()):
         raise ValueError('Model already contains parametrizations')
+    int8 = tuple(int8)
     model.requires_grad_(False)
     targets = [(name, m, p) for name, m in model.named_modules()
                for p, v in m.named_parameters(recurse=False)
@@ -50,20 +63,23 @@ def quantize(model, bits):
     for name, module, key in targets:
         value = getattr(module, key)
         covered += value.numel() * value.element_size()
-        records.append({'name':name+'.'+key, 'shape':list(value.shape)})
-        parametrize.register_parametrization(module, key, RowQuant(bits, value.shape[1], value.dtype))
+        full = name + '.' + key
+        use = 8 if bits == 4 and any(t in full for t in int8) else bits
+        records.append({'name': full, 'shape': list(value.shape), 'bits': use})
+        parametrize.register_parametrization(module, key, RowQuant(use, value.shape[1], value.dtype, group))
         del value
     after = sum(p.numel()*p.element_size() for p in model.parameters())
-    return {'bits':bits, 'covered_source_bytes':covered, 'compute':'dense BF16 reconstructed per access',
-            'parameter_bytes_before':before, 'parameter_bytes_after':after, 'targets':records}
+    return {'bits': bits, 'group': group, 'int8_patterns': list(int8), 'covered_source_bytes': covered,
+            'compute': 'dense BF16 reconstructed per access',
+            'parameter_bytes_before': before, 'parameter_bytes_after': after, 'targets': records}
 
-def save_quantized(model, path, bits):
+def save_quantized(model, path, bits, group=0, int8=()):
     """Runtime state, not a native PAN2 checkpoint. Do not edit with WSP."""
     from safetensors.torch import save_file
     from pathlib import Path
     if Path(path).exists(): raise FileExistsError(path)
     save_file({k:v.detach().contiguous() for k,v in model.state_dict().items()},str(path),
-              metadata={'schema':'pan2kit.quant-state/1','bits':str(bits)})
+              metadata={'schema':'pan2kit.quant-state/2','bits':str(bits),'group':str(group),'int8':json.dumps(list(int8))})
 
 def load_quantized(model, path):
     """Reconstruct matching parametrizations, then strictly load packed state on CPU."""
@@ -71,7 +87,7 @@ def load_quantized(model, path):
     from safetensors.torch import load_file
     with safe_open(str(path),framework='pt',device='cpu') as f:
         meta=f.metadata() or {}
-    if meta.get('schema')!='pan2kit.quant-state/1': raise ValueError('Unsupported quant state schema')
-    bits=int(meta['bits']); report=quantize(model,bits)
+    if meta.get('schema')!='pan2kit.quant-state/2': raise ValueError('Unsupported quant state schema')
+    bits=int(meta['bits']); report=quantize(model,bits,int(meta['group']),json.loads(meta['int8']))
     model.load_state_dict(load_file(str(path),device='cpu'),strict=True)
     return report

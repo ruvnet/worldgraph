@@ -45,3 +45,34 @@ class QuantTests(unittest.TestCase):
         m=Model(); m.blocks[0].w.data[0,0]=float('nan')
         with self.assertRaises(ValueError): quantize(m,8)
 if __name__=='__main__': unittest.main()
+
+
+class GroupTests(unittest.TestCase):
+    def heavy(self):
+        torch.manual_seed(0)
+        w = torch.randn(64, 512) * 0.02
+        w[:, ::37] *= 40  # outlier columns, like the large-magnitude channels in transformer weights
+        return w.to(torch.bfloat16)
+
+    def error(self, group, bits=4):
+        m = Model(); m.blocks[0].w = nn.Parameter(self.heavy()); ref = m.blocks[0].w.detach().clone()
+        quantize(m, bits, group)
+        return ((m.blocks[0].w.float() - ref.float()).norm() / ref.float().norm()).item()
+
+    def test_groups_cut_error_on_outlier_heavy_weights(self):
+        row, g128, g32 = self.error(0), self.error(128), self.error(32)
+        self.assertLess(g128, row); self.assertLess(g32, g128)
+        self.assertLess(self.error(32, 8), g32 / 4)  # 8 bits is far finer than 4, with or without groups
+
+    def test_group_roundtrip_odd_width_and_shapes(self):
+        with tempfile.TemporaryDirectory() as d:
+            m = Model(); report = quantize(m, 4, 32, int8=('blocks.0.w',))
+            self.assertEqual(report['targets'][0]['bits'], 8)  # mixed precision: pattern matched
+            self.assertEqual(m.blocks[0].parametrizations.w.original1.shape, (64, 3))  # ceil(65/32) scales per row
+            path = Path(d)/'g.safetensors'; save_quantized(m, path, 4, 32, ('blocks.0.w',))
+            n = Model(); load_quantized(n, path)
+            self.assertTrue(torch.equal(m.blocks[0].w, n.blocks[0].w))
+
+    def test_rejects_bad_group(self):
+        for bad in (-2, 7, 1.5):
+            with self.assertRaises(ValueError): quantize(Model(), 4, bad)

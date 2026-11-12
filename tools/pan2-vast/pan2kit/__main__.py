@@ -23,8 +23,12 @@ def main():
     s=sub.add_parser('doctor'); s.add_argument('--repo',required=True)
     s=sub.add_parser('build-wsp'); s.add_argument('--dest',default='wsp-source')
     s=sub.add_parser('edit'); s.add_argument('--binary',required=True); s.add_argument('--base',required=True); s.add_argument('--output',required=True); s.add_argument('--patch',required=True)
+    s=sub.add_parser('gate'); s.add_argument('--reference',required=True); s.add_argument('--candidate',required=True); s.add_argument('--min-ssim',type=float,default=0.85); s.add_argument('--min-psnr',type=float,default=24.0)
     s=sub.add_parser('matrix'); s.add_argument('--repo',required=True); s.add_argument('--base',required=True); s.add_argument('--edited',required=True); s.add_argument('--prompt-file',required=True); s.add_argument('--vae',required=True); s.add_argument('--output',required=True); s.add_argument('--training-config'); s.add_argument('--bits',type=int,choices=[4,8],default=8); s.add_argument('--seed',type=int,default=42); s.add_argument('--frames',type=int,default=9); s.add_argument('--height',type=int,default=256); s.add_argument('--width',type=int,default=448); s.add_argument('--steps',type=int,default=4); s.add_argument('--timeout',type=int,default=7200); s.add_argument('--save-quant',action='store_true')
     a=p.parse_args()
+    if a.cmd=='gate':
+        from pan2kit.quality import compare
+        r=compare(a.reference,a.candidate,a.min_ssim,a.min_psnr); print(json.dumps(r,indent=2)); sys.exit(0 if r['verdict']=='pass' else 1)
     if a.cmd=='fetch': checkout(a.repo,'https://github.com/ifm-ai/PAN2.git',PAN_COMMIT); return
     if a.cmd=='doctor':
         import torch

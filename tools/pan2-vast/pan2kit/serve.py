@@ -180,6 +180,8 @@ def main():
     p.add_argument('--attn', choices=['fa4', 'sdpa'], default='fa4')
     p.add_argument('--repo', required=True)
     p.add_argument('--bits', type=int, choices=[0, 4, 8], required=True)
+    p.add_argument('--group', type=int, default=0, help='scale group size for quantization (0 = per row)')
+    p.add_argument('--int8', default='', help='comma list of matrix-name fragments kept at 8 bits when --bits 4')
     p.add_argument('--host', default='127.0.0.1')
     p.add_argument('--port', type=int, default=18300)
     p.add_argument('--workdir', required=True)
@@ -203,7 +205,7 @@ def main():
     if attn_state:
         attn_state.verify()
 
-    info = {'attention_backend': args.attn, 'bits': args.bits, 'gpu': torch.cuda.get_device_name(0),
+    info = {'attention_backend': args.attn, 'bits': args.bits, 'group': args.group, 'int8': args.int8, 'gpu': torch.cuda.get_device_name(0),
             'compute_capability': list(torch.cuda.get_device_capability(0)), 'pan_commit': None}
     try:
         from pan2kit import PAN_COMMIT
@@ -223,7 +225,7 @@ def main():
         receipt['checkpoint_load_seconds'] = time.monotonic() - phase
         if args.bits:
             phase = time.monotonic()
-            receipt['quantization'] = quantize(pipe.transformer, args.bits)
+            receipt['quantization'] = quantize(pipe.transformer, args.bits, args.group, [t for t in args.int8.split(',') if t])
             receipt['quantization_seconds'] = time.monotonic() - phase
         return result
     gen.load_transformer_weights = load

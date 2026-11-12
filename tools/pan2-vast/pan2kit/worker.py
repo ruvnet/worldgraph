@@ -10,7 +10,7 @@ def sha(path):
     return h.hexdigest()
 
 def main():
-    p=argparse.ArgumentParser(); p.add_argument('--attn',choices=['fa4','sdpa'],default='fa4'); p.add_argument('--repo',required=True); p.add_argument('--bits',type=int,choices=[0,4,8],required=True); p.add_argument('--receipt',required=True); p.add_argument('--export-quant',action='store_true'); p.add_argument('--assets-manifest')
+    p=argparse.ArgumentParser(); p.add_argument('--attn',choices=['fa4','sdpa'],default='fa4'); p.add_argument('--repo',required=True); p.add_argument('--bits',type=int,choices=[0,4,8],required=True); p.add_argument('--receipt',required=True); p.add_argument('--group',type=int,default=0); p.add_argument('--int8',default=''); p.add_argument('--export-quant',action='store_true'); p.add_argument('--assets-manifest')
     args, native=p.parse_known_args()
     repo=Path(args.repo).resolve(); sys.path.insert(0,str(repo)); os.chdir(repo)
     attn_state=None
@@ -31,11 +31,11 @@ def main():
         report['checkpoint_load_seconds']=time.monotonic()-phase
         if args.bits:
             phase=time.monotonic()
-            report['quantization']=quantize(pipe.transformer,args.bits)
+            report['quantization']=quantize(pipe.transformer,args.bits,args.group,[t for t in args.int8.split(',') if t])
             report['quantization_seconds']=time.monotonic()-phase
             if args.export_quant:
                 path=Path(args.receipt).with_name('quantized.safetensors')
-                save_quantized(pipe.transformer,path,args.bits)
+                save_quantized(pipe.transformer,path,args.bits,args.group,[t for t in args.int8.split(',') if t])
                 report['quantized_state']={'path':str(path),'sha256':sha(path)}
         return result
     gen.load_transformer_weights=load
