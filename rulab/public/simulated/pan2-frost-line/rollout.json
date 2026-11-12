@@ -1,0 +1,84 @@
+{
+  "format": "worldgraph.simulated.rollout",
+  "version": 1,
+  "name": "Domaine des Combes · Lower vineyard",
+  "simulated": true,
+  "media": {
+    "file": "clip.mp4",
+    "sha256": "dce3d3a5b7dbe3679bbfb8c9439e99e749daec668685d771d16ecd1fb7dfabfa",
+    "bytes": 4261489,
+    "mediaType": "video/mp4",
+    "width": 1248,
+    "height": 704,
+    "fps": 24,
+    "durationSec": 20.0
+  },
+  "caption": {
+    "file": "caption.json",
+    "sha256": "330e3a066e27d5b85dca83115a5dbc2d486359a64a6cbb72720ea68425b4797a",
+    "bytes": 2846
+  },
+  "envelope": {
+    "schema_version": 1,
+    "session_id": "pan2-w-6",
+    "epoch": 0,
+    "sequence": 0,
+    "chunk": {
+      "frames": [
+        {
+          "transport": "pan2-media",
+          "locator": "pan2-w-6/e0-s0/clip.mp4",
+          "content_hash": "sha256:dce3d3a5b7dbe3679bbfb8c9439e99e749daec668685d771d16ecd1fb7dfabfa",
+          "byte_length": 4261489,
+          "media_type": "video/mp4"
+        },
+        {
+          "transport": "pan2-media",
+          "locator": "pan2-w-6/e0-s0/caption.json",
+          "content_hash": "sha256:330e3a066e27d5b85dca83115a5dbc2d486359a64a6cbb72720ea68425b4797a",
+          "byte_length": 2846,
+          "media_type": "application/json"
+        },
+        {
+          "transport": "pan2-media",
+          "locator": "pan2-w-6/e0-s0/generation.json",
+          "content_hash": "sha256:0d0c930295d1c7ac6251dbcc8d45444a8343f80ea273aa676eb5b3c2fe6aa9e2",
+          "byte_length": 96,
+          "media_type": "application/json"
+        }
+      ],
+      "provenance": {
+        "provider": "pan2-worker",
+        "model": "IFM/PAN2",
+        "checkpoint": "a7936f7bea20ec3b9de809583712b40693071819",
+        "runtime_version": "ifm-ai/PAN2@0fb907b6e16a82ead6d691d1de2eef6299c71e9a",
+        "source_snapshot_hash": "sha256:c1b8d83f86490431be0959bca31aaf47c8ed5f789881dc91e5ca6144d75a4938",
+        "source_stream_epoch": 3103,
+        "prompt_action_hash": "worldgraph:5824284ce67e2e23:16f97076c12c5f88",
+        "generation_seed": 123,
+        "generation_sequence": 0,
+        "simulated": true,
+        "confidence": 0.0,
+        "privacy": {
+          "projection_id": "spaces:domaine-des-combes:lower-vineyard",
+          "hosted_processing_approved": true,
+          "redactions_applied": 0,
+          "retention": "policy_bound"
+        },
+        "license": {
+          "license_id": "Apache-2.0",
+          "usage": "production",
+          "redistribution_allowed": true,
+          "attribution_required": true,
+          "notice": "PAN 2 (MBZUAI IFM) is Apache-2.0; retain its NOTICE and the Qwen3.5 and Wan 2.2 component licenses"
+        }
+      }
+    }
+  },
+  "generation": {
+    "hardware": "NVIDIA H200 NVL",
+    "steps": 50,
+    "seconds": 2361.2,
+    "peakVramGb": 127.9
+  }
+}

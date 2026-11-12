@@ -15,6 +15,9 @@ const MAX_ARTIFACT_BYTES = 64 * 1024 * 1024;
 const REQUIRED_ARTIFACTS = [
   'rulab/dist/index.html', 'rulab/dist/wasm/worldgraph_wasm.js', 'rulab/dist/wasm/worldgraph_wasm_bg.wasm',
   ...['capture.json', 'frame-000.splat', 'frame-001.splat', 'frame-002.splat', 'frame-003.splat'].map((name) => `rulab/dist/capture-example/${name}`),
+  // Bundled synthetic simulated rollout (ADR-204): a fixed fixture, never an index-driven scan.
+  'rulab/dist/simulated/index.json',
+  ...['rollout.json', 'clip.mp4', 'caption.json'].map((name) => `rulab/dist/simulated/synthetic-example/${name}`),
 ];
 export const GATES = Object.freeze([
   { id: 'harness-tests', cwd: '.', executable: 'node', args: ['--test', 'bin/harness.test.js'] },
@@ -174,8 +177,9 @@ function writeArtifact(path, bytes) {
 }
 
 // Inspect only the small entrypoint and its direct local code/style references,
-// plus the known dynamically loaded WASM pair and five bundled capture files.
-// Never recursively walk dist or follow paths from an imported capture manifest.
+// plus the known dynamically loaded WASM pair, five bundled capture files, and the
+// four fixed files of the bundled synthetic simulated rollout. Never recursively walk
+// dist or follow paths from an imported capture manifest or the rollout index.
 function collectArtifacts(root) {
   const artifacts = [], issues = [], paths = new Set(REQUIRED_ARTIFACTS);
   const dist = join(root, 'rulab/dist');

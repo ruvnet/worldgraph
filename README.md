@@ -1,3 +1,4 @@
+| [`worldgraph-pan2`](./worldgraph-pan2) | **Simulated rollouts** — asks the open PAN 2 video world model "what might happen next", from a plan or from Cognitum Spaces records; output is hash-verified and always labelled a prediction, never a capture ([ADR 208](./docs/adr/208-pan2-simulated-rollout-provider.md)) |
 # worldgraph
 
 **A privacy-aware environmental digital twin — and an AI agent that helps you build one.**

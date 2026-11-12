@@ -1,0 +1,31 @@
+{
+  "format": "cognitum.spaces.snapshot",
+  "version": 1,
+  "site": { "id": "hq-toronto", "name": "Toronto office", "privacy": "P2" },
+  "space": {
+    "id": "level-3-open", "name": "Level 3 open office", "siteId": "hq-toronto", "buildingId": "main", "floorId": "l3", "privacy": "P2",
+    "attributes": {
+      "description": "A quiet modern open-plan office early in the morning, seen from one corner. Light oak floor, white ceiling with acoustic panels, and a row of large windows along the right wall. A glass entrance door stands closed at the far end of the room. Two rows of white desks with dark monitors and black task chairs fill the middle of the room, and a small lounge with a grey sofa sits near the windows. The ceiling lights are off and the room is empty.",
+      "lighting": "Soft, cool early-morning daylight from the windows on the right; the ceiling lights are off at first, leaving the far side of the room dim.",
+      "view": "Static wide view from a high corner of the room, looking diagonally across the desks toward the glass entrance door at the far end."
+    }
+  },
+  "zones": [
+    { "id": "zone-entry", "name": "entrance", "siteId": "hq-toronto", "spaceId": "level-3-open", "attributes": { "centerM": [0.0, 12.0, 1.1], "sizeM": [1.0, 0.1, 2.2], "class": "glass entrance door" } },
+    { "id": "zone-desks", "name": "desk area", "siteId": "hq-toronto", "spaceId": "level-3-open", "attributes": { "centerM": [-1.0, 5.0, 0.4], "sizeM": [6.0, 4.0, 0.8], "class": "rows of desks" } },
+    { "id": "zone-lounge", "name": "lounge", "siteId": "hq-toronto", "spaceId": "level-3-open", "attributes": { "centerM": [4.0, 3.0, 0.4], "sizeM": [2.2, 1.0, 0.8], "class": "grey sofa" } }
+  ],
+  "entities": [
+    { "id": "track-41", "name": "Occupant", "entityType": "track", "identityMode": "anonymous", "siteId": "hq-toronto", "spaceId": "level-3-open",
+      "attributes": { "appearance": "An adult office worker seen from a distance, wearing a dark coat and carrying a shoulder bag." } },
+    { "id": "csi-node-1", "name": "RF sensing node", "entityType": "sensor", "siteId": "hq-toronto", "spaceId": "level-3-open", "attributes": {} }
+  ],
+  "events": [
+    { "id": "evt-501", "eventType": "occupancy.entered", "eventSequence": 501, "observedAt": "2026-11-10T12:31:02Z", "siteId": "hq-toronto", "spaceId": "level-3-open", "zoneId": "zone-entry", "confidence": 0.9,
+      "attributes": { "entityId": "track-41", "narrative": "The glass entrance door at the far end opens and a person walks in; the ceiling lights switch on across the room as they enter.", "action": "opens the glass door and walks into the room." } },
+    { "id": "evt-502", "eventType": "zone.transit", "eventSequence": 502, "observedAt": "2026-11-10T12:31:15Z", "siteId": "hq-toronto", "spaceId": "level-3-open", "zoneId": "zone-desks", "confidence": 0.88,
+      "attributes": { "entityId": "track-41", "narrative": "The person walks at an easy pace down the aisle between the two rows of desks toward the near end of the room.", "action": "walks down the aisle between the rows of desks." } },
+    { "id": "evt-503", "eventType": "presence.settled", "eventSequence": 503, "observedAt": "2026-11-10T12:31:40Z", "siteId": "hq-toronto", "spaceId": "level-3-open", "zoneId": "zone-desks", "confidence": 0.93,
+      "attributes": { "entityId": "track-41", "narrative": "The person stops at a desk, sets the bag down, pulls out the chair and sits; the monitor on that desk lights up.", "action": "sets the bag down, pulls out a chair and sits at a desk." } }
+  ]
+}
