@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Start a PAN2 serverless worker on a Vast instance: environment, weights, model server, then Vast's PyWorker.
 # Idempotent: a cold worker that restarts skips everything already on its disk.
-# Settings (template env): PAN2_BITS (0|4|8, default 8), PAN2_ATTN (fa4|sdpa, default fa4), PAN2_PORT.
+# Settings (template env): PAN2_BITS (0|4|8, default 8), PAN2_GROUP (scale group, default 0 = per row),
+# PAN2_INT8 (comma list of matrix-name fragments kept at 8 bits when PAN2_BITS=4), PAN2_ATTN (fa4|sdpa, default fa4),
+# PAN2_PORT, PAN2_MAX_FRAMES / PAN2_MAX_PIXELS / PAN2_MAX_STEPS (request caps; defaults are the smoke size).
 #
 # Two logs, on purpose. Vast's PyWorker watches MODEL_LOG for the server's ready line, so only progress
 # markers and the server's own output go there. Everything else (installs, the kit's unit tests, which
@@ -49,7 +51,8 @@ serve() {
   [ -d "$vae" ] || { echo "VAE snapshot directory is missing: $vae"; return 1; }
   step "model server (bits=${PAN2_BITS:-8} attention=${PAN2_ATTN:-fa4})"
   HF_HOME="$KIT/hf-cache" HF_HUB_OFFLINE=1 PYTHONPATH="$KIT" python -m torch.distributed.run --standalone --nproc_per_node=1 \
-    --module pan2kit.serve --repo "$KIT/PAN2" --bits "${PAN2_BITS:-8}" --attn "${PAN2_ATTN:-fa4}" \
+    --module pan2kit.serve --repo "$KIT/PAN2" --bits "${PAN2_BITS:-8}" --group "${PAN2_GROUP:-0}" --int8 "${PAN2_INT8:-}" --attn "${PAN2_ATTN:-fa4}" \
+    --max-frames "${PAN2_MAX_FRAMES:-9}" --max-pixels "${PAN2_MAX_PIXELS:-114688}" --max-steps "${PAN2_MAX_STEPS:-4}" \
     --port "$PAN2_PORT" --workdir "$W/pan2-serve" \
     --checkpoint_path "$KIT/models/base" --wan_vae_checkpoint "$vae" --dtype bf16 \
     --offload models --offload_prefetch false --compile false \

@@ -48,3 +48,7 @@ harness = false
 [lints.rust]
 unsafe_code = "forbid"
 missing_docs = "warn"
+
+[[example]]
+name = "vast_probe"
+required-features = ["vast"]

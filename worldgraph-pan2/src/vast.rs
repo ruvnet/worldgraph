@@ -32,6 +32,27 @@ pub const VAST_FILE: &str = "vast.json";
 const MAX_PROMPT_BYTES: usize = 8192;
 const MAX_ERROR_BODY: usize = 300;
 
+/// Downloads Vast's root certificate (PEM) for [`VastConfig::root_cert`].
+pub async fn fetch_root_cert() -> Result<Vec<u8>, Pan2Error> {
+    let response = reqwest::get(ROOT_CERT_URL).await.map_err(|error| {
+        Pan2Error::Renderer(format!(
+            "cannot fetch Vast's root certificate: {}",
+            error.without_url()
+        ))
+    })?;
+    if !response.status().is_success() {
+        return Err(Pan2Error::Renderer(format!(
+            "root certificate request returned HTTP {}",
+            response.status().as_u16()
+        )));
+    }
+    Ok(response
+        .bytes()
+        .await
+        .map_err(|_| Pan2Error::Renderer("root certificate download was cut off".into()))?
+        .to_vec())
+}
+
 /// What the server accepts. These mirror `pan2kit.serve --max-frames/--max-pixels/--max-steps`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Caps {
