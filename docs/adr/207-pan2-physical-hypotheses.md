@@ -116,3 +116,8 @@ selection; authoritative snapshots require no migration.
 
 References: [PAN2 model card](https://github.com/ifm-ai/PAN2/blob/main/MODEL_CARD.md),
 [Rust checkpoint work](https://github.com/ruvnet/ruv-FANN/pull/228).
+
+## Quantization experiment controller
+
+[ADR 209](209-pan2-quantization-metaharness.md) adds the optional local quantization metaharness for bounded single variant trials, reproducible scheduling, cost and quality evidence, and cross hardware comparisons. Its decisions never promote physical hypotheses or alter measured observations. CPU evidence does not complete the live acceptance requirements above.
+

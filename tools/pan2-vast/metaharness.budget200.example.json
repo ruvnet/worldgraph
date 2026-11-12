@@ -1,0 +1,59 @@
+{
+  "schema": "pan2-metaharness/1",
+  "repo": "PAN2",
+  "vae": "REPLACE_WITH_LOCAL_VAE_SNAPSHOT_DIRECTORY",
+  "assets_manifest": "models/downloads.json",
+  "hardware_label": "h200",
+  "hourly_usd": 0,
+  "budget_usd": 200,
+  "setup_storage_transfer_usd": 50,
+  "timeout_seconds": 1800,
+  "order_seed": 42,
+  "settings": {
+    "frames": 9,
+    "height": 256,
+    "width": 448,
+    "steps": 4
+  },
+  "seeds": [
+    42
+  ],
+  "prompts": [
+    {
+      "id": "bounce",
+      "file": "prompt.txt"
+    }
+  ],
+  "variants": [
+    {
+      "id": "base_bf16",
+      "checkpoint": "models/base",
+      "bits": 0
+    },
+    {
+      "id": "edited_bf16",
+      "checkpoint": "models/edited",
+      "bits": 0
+    },
+    {
+      "id": "base_int8",
+      "checkpoint": "models/base",
+      "bits": 8
+    },
+    {
+      "id": "edited_int8",
+      "checkpoint": "models/edited",
+      "bits": 8
+    },
+    {
+      "id": "base_int4",
+      "checkpoint": "models/base",
+      "bits": 4
+    },
+    {
+      "id": "edited_int4",
+      "checkpoint": "models/edited",
+      "bits": 4
+    }
+  ]
+}

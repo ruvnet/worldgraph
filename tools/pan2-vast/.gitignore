@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+PAN2/
+wsp-source/
+models/
+hf-cache/
+results*/
+patch.json
+environment-installed.txt
+*.safetensors
+*.mp4
+experiments/
+*.lock
+metaharness.local.json
+billing.local.json
+reviews.local.json

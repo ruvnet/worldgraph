@@ -1,0 +1,39 @@
+{
+  "status": "cpu_tests_passed_gpu_pending",
+  "python_test_runner": "unittest",
+  "torch": "2.11.0+cpu",
+  "safetensors": "0.8.0",
+  "tests_passed": 13,
+  "checks": [
+    "INT8 and INT4 raw parameter reconstruction",
+    "odd matrix width",
+    "zero weights",
+    "nonfinite weight rejection",
+    "duplicate quantization rejection",
+    "retained storage reduction",
+    "unchanged excluded weights",
+    "packed Safetensors export and reload",
+    "four variant orchestration with mocked GPU subprocesses",
+    "Python compilation",
+    "shell syntax",
+    "quantized only scheduling",
+    "seeded unique experiment jobs",
+    "budget reservation refusal",
+    "worker timeout process group cleanup",
+    "hash bound resume and tamper rejection",
+    "paired 100 case actual cost and quality decision",
+    "small sample inconclusive decision",
+    "offline encoder revision mismatch rejection"
+  ],
+  "not_run": [
+    "PAN2 GPU inference",
+    "CUDA fused kernel compatibility",
+    "full checkpoint quantization",
+    "quality and physics evaluation",
+    "GPU memory or speed benchmark"
+  ],
+  "native_source_commit": "0fb907b6e16a82ead6d691d1de2eef6299c71e9a",
+  "rust_editor_source_commit": "812695581339bfae5b7e615d0866fa855b2f26c1",
+  "clean_ci_dependency_fix": "Declare NumPy explicitly for safetensors packed export; CI rerun required",
+  "metaharness_tests_passed_after_final_changes": 8
+}
