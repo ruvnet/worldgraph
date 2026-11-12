@@ -87,3 +87,7 @@ python -m unittest discover -s tests -v
 ```
 
 CPU tests cover scheduling, quantized only commands, budget refusal, failure and timeout handling, immutable inputs, cached artifact tampering, actual cost gates, small sample inconclusiveness and output bound reviews, as well as the quantizer's numeric and packed file checks. GPU inference, memory fit, kernel compatibility and quality remain pending your separate machine run.
+
+## USD 200 authorized run
+
+See the [execution and admission record](../../docs/mission/pan2-budget200-execution.md). The user authorized USD 200 total. The first Software Factory admission attempt was blocked because its executor did not receive the existing vault credential; no Vast API request or GPU inference was made. The budget200 template intentionally refuses planning until its zero hourly rate is replaced with an actual quote. Do not interpret the controller scheduling estimate as a rental billing stop.

@@ -1,0 +1,12 @@
+{
+  "schema": "pan2-vast-admission/1",
+  "execution_surface": "ruOS Software Factory",
+  "status": "blocked",
+  "reason": "VAST_API_KEY_NOT_IN_EXECUTION_ENVIRONMENT",
+  "process_exit_code": 2,
+  "api_called": false,
+  "authorized_budget_usd": 200,
+  "new_vast_spend_initiated_usd": 0,
+  "existing_account_billing": "unknown",
+  "gpu_e2e": "not_started"
+}
