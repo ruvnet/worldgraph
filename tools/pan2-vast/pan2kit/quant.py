@@ -12,7 +12,8 @@ class RowQuant(nn.Module):
     def right_inverse(self, value):
         if value.device.type != 'cpu': raise ValueError('Quantize on CPU before GPU residency')
         limit = 7 if self.bits == 4 else 127
-        packed, scales = [], []
+        packed = torch.empty((value.shape[0], (self.width + 1)//2 if self.bits == 4 else self.width), dtype=torch.uint8 if self.bits == 4 else torch.int8)
+        scales = torch.empty((value.shape[0], 1), dtype=torch.float32)
         rows = max(1, 4_000_000 // self.width)
         for start in range(0, value.shape[0], rows):
             v = value[start:start+rows].float()
@@ -24,8 +25,9 @@ class RowQuant(nn.Module):
                 q = (q.to(torch.int16) + 8).to(torch.uint8)
                 if self.width % 2: q = torch.nn.functional.pad(q, (0, 1), value=8)
                 q = q[:, ::2] | (q[:, 1::2] << 4)
-            packed.append(q); scales.append(scale)
-        return torch.cat(packed), torch.cat(scales)
+            packed[start:start+len(q)] = q
+            scales[start:start+len(q)] = scale
+        return packed, scales
 
     def forward(self, q, scale):
         if self.bits == 4:
@@ -38,17 +40,21 @@ def quantize(model, bits):
     if any(parametrize.is_parametrized(m) for m in model.modules()):
         raise ValueError('Model already contains parametrizations')
     model.requires_grad_(False)
-    targets = [(name, m, p, v) for name, m in model.named_modules()
+    targets = [(name, m, p) for name, m in model.named_modules()
                for p, v in m.named_parameters(recurse=False)
                if name.startswith('blocks.') and v.ndim == 2 and v.is_floating_point()]
     if not targets: raise ValueError('No PAN2 block matrices found; architecture mismatch')
     before = sum(p.numel()*p.element_size() for p in model.parameters())
     records = []
-    for name, module, key, value in targets:
+    covered = 0
+    for name, module, key in targets:
+        value = getattr(module, key)
+        covered += value.numel() * value.element_size()
         records.append({'name':name+'.'+key, 'shape':list(value.shape)})
         parametrize.register_parametrization(module, key, RowQuant(bits, value.shape[1], value.dtype))
+        del value
     after = sum(p.numel()*p.element_size() for p in model.parameters())
-    return {'bits':bits, 'compute':'dense BF16 reconstructed per access',
+    return {'bits':bits, 'covered_source_bytes':covered, 'compute':'dense BF16 reconstructed per access',
             'parameter_bytes_before':before, 'parameter_bytes_after':after, 'targets':records}
 
 def save_quantized(model, path, bits):

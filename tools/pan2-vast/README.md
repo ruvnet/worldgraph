@@ -132,7 +132,7 @@ This kit produces model experiment artifacts. It does not publish inferred posit
 
 ## Cost and hardware validation plan
 
-See the [staged quantization cost plan](../../docs/mission/pan2-quantization-cost-plan.md) for hardware trials, proposed spending caps, quality gates, break even calculations, required instrumentation and cost per accepted output. Savings remain unmeasured. The current matrix requires a BF16 control on each GPU; smaller hardware may require the planned single variant runner first.
+See the [staged quantization cost plan](../../docs/mission/pan2-quantization-cost-plan.md) for hardware trials, proposed spending caps, quality gates, break even calculations, required instrumentation and cost per accepted output. Savings remain unmeasured. The legacy matrix requires BF16 on each GPU. The new [quantization metaharness](METAHARNESS.md) supports quantized only plans, single trials, seeded scheduling, validated resume, cost allowances and output bound quality decisions. See [ADR 208](../../docs/adr/208-pan2-quantization-metaharness.md).
 
 ## Source provenance
 
@@ -143,3 +143,4 @@ Upstream environment: https://github.com/ifm-ai/PAN2/blob/0fb907b6e16a82ead6d691
 WSP editor: https://github.com/ruvnet/ruv-FANN/tree/812695581339bfae5b7e615d0866fa855b2f26c1/crates/wsp-tensor
 
 No upstream source or weights are redistributed here. Retain original licenses and notices for separately downloaded components.
+

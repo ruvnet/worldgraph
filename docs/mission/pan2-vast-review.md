@@ -13,3 +13,7 @@ Validation performed on ruOS with torch 2.11.0+cpu and safetensors 0.8.0: six un
 Pending: execute the documented four variant matrix on the user's Vast GPU, verify exact source preservation and rollback, measure GPU peaks and wall time, and assess held out quality with task specific tolerances. Bootstrap follows the pinned upstream Python 3.14 and CUDA 13.2 stack, while CPU tests used torch 2.11.0. No GPU compatibility claim follows from those CPU results.
 
 A calibrated video to metric extractor is still required before forecasts enter WorldGraph. The runner has no graph mutation, model promotion, actuator, cloud endpoint or automatic rental path.
+
+## Quantization metaharness follow up
+
+ADR 208 implements bounded planning, seeded six variant scheduling, quantized only trials, validated resume, per worker timeout cleanup, soft cost reservations and output bound actual cost and quality evaluation. The quantizer preallocates packed storage and releases source references by matrix. All 13 CPU tests passed on ruOS with torch 2.11.0+cpu and safetensors 0.8.0. Seven new tests cover failure, budget, resume integrity, cost gates, 100 paired cases and inconclusive small samples. GPU measurements, physical extraction and savings remain pending.

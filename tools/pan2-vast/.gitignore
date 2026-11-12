@@ -9,3 +9,8 @@ patch.json
 environment-installed.txt
 *.safetensors
 *.mp4
+experiments/
+*.lock
+metaharness.local.json
+billing.local.json
+reviews.local.json
