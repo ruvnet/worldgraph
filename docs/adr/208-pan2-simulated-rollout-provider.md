@@ -106,3 +106,13 @@ The resulting clip dramatizes a recorded sequence. It is not a recording of it.
 - No crate or npm package was published.
 - The token count of compiled captions was not measured with the Qwen3.5 tokenizer.
 - No comparison against other providers (Wan 2.2, Oasis) was run.
+
+## 9. Physical hypotheses from Spaces (ADR 207 integration)
+
+`worldgraph_pan2::physical_spaces` connects ADR 207's structured physical hypotheses to the Spaces API:
+
+- `physical_scene_from_snapshot` builds a `WorldGraph`, the selected tracks and a `PhysicalContext` from a snapshot **read from the API**. The snapshot's `snapshotHash` has been recomputed, and a snapshot loaded from a plain file is refused. Bounds come from the space's `placement`, obstacles from placed `object` entities, the speed ceiling from the most conservative zone `physics.maxSpeedMps`, and tracks from `person` or `track` entities that are `anonymous` and placed. Names never leave the process. The calibration id says the geometry is writer-declared placement, not a survey.
+- `hypothesis_simulation` turns an accepted forecast into the body of `POST /v1/spatial/simulations`: type `physical.hypothesis`, confidence 0, closed provenance carrying the verified snapshot hash, trajectories as `points` objects. A fixture says so in the label and in `attributes.execution`. Nested arrays are not used, because Firestore cannot store an array inside an array.
+- The forecast is never an event and never changes measured state. The Spaces server stamps `simulated: true`.
+
+Verified on the Firestore emulator against the real Spaces handler: a Rust-built hypothesis was accepted (201), read back, replayed on retry, and left the snapshot hash unchanged. Real PAN 2 extraction is still out of scope (ADR 207).
