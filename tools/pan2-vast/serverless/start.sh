@@ -7,7 +7,7 @@ KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 W="${WORKSPACE_DIR:-/workspace}"
 export MODEL_LOG="${MODEL_LOG:-$W/pan2-server.log}" PAN2_PORT="${PAN2_PORT:-18300}"
 PYWORKER_COMMIT=f1754c25680450ee57cea0fa09583404e2484bf1
-mkdir -p "$W"; : >> "$MODEL_LOG"
+mkdir -p "$W"; : > "$MODEL_LOG"  # a restarted worker must not see an old ready line
 fail() { echo "PAN2_SETUP_FAILED $*" | tee -a "$MODEL_LOG"; }
 step() { printf '[%s] === %s ===\n' "$(date -u +%FT%TZ)" "$*" | tee -a "$MODEL_LOG"; }
 
