@@ -40,9 +40,18 @@ setup() {
   if [ ! -f models/paths.json ]; then
     step "model weights"
     set +u; source "$W/conda/etc/profile.d/conda.sh"; conda activate pan2-wsp; set -u
-    HF_HOME="$KIT/hf-cache" python prepare_models.py --repo PAN2 --dest models  # resumes a partial download
+    HF_HOME="$KIT/hf-cache" python prepare_models.py --repo PAN2 --dest models ${PAN2_QUANT_STATE:+--skip-transformer}  # resumes a partial download
   fi
   test -s models/paths.json
+  if [ -n "${PAN2_QUANT_STATE:-}" ]; then
+    # The state may still be uploading: wait for its .sha256 sidecar (written last), then verify it.
+    step "waiting for quantized state $PAN2_QUANT_STATE"
+    for _ in $(seq 1 720); do [ -s "$PAN2_QUANT_STATE.sha256" ] && break; sleep 5; done
+    [ -s "$PAN2_QUANT_STATE.sha256" ] || { echo "quantized state never arrived"; return 1; }
+    want=$(cut -d' ' -f1 "$PAN2_QUANT_STATE.sha256"); got=$(sha256sum "$PAN2_QUANT_STATE" | cut -d' ' -f1)
+    [ "$want" = "$got" ] || { echo "quantized state hash mismatch: want $want got $got"; return 1; }
+    step "quantized state verified $got"
+  fi
 }
 
 serve() {
