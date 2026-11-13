@@ -81,6 +81,20 @@ def save_quantized(model, path, bits, group=0, int8=()):
     save_file({k:v.detach().contiguous() for k,v in model.state_dict().items()},str(path),
               metadata={'schema':'pan2kit.quant-state/2','bits':str(bits),'group':str(group),'int8':json.dumps(list(int8))})
 
+def quant_meta(path):
+    """Return (bits, group, int8 patterns) recorded in a saved quantized state, without reading tensors."""
+    from safetensors import safe_open
+    with safe_open(str(path),framework='pt',device='cpu') as f:
+        meta=f.metadata() or {}
+    if meta.get('schema')!='pan2kit.quant-state/2': raise ValueError('Unsupported quant state schema')
+    return int(meta['bits']), int(meta['group']), json.loads(meta['int8'])
+
+def check_quant_args(path, bits, group, int8):
+    """Refuse a saved state whose recorded settings differ from the requested ones."""
+    got=quant_meta(path); want=(bits, group, sorted(int8))
+    if (got[0], got[1], sorted(got[2]))!=want:
+        raise ValueError(f'Quantized state {path} was saved with bits={got[0]} group={got[1]} int8={got[2]}, not the requested {want}')
+
 def load_quantized(model, path):
     """Reconstruct matching parametrizations, then strictly load packed state on CPU."""
     from safetensors import safe_open

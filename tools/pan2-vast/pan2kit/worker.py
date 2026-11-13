@@ -1,7 +1,7 @@
 import argparse, hashlib, importlib.util, json, os, resource, sys, time
 from pathlib import Path
 import torch
-from pan2kit.quant import quantize, save_quantized
+from pan2kit.quant import quantize, save_quantized, load_quantized, check_quant_args
 
 def sha(path):
     h=hashlib.sha256()
@@ -10,7 +10,7 @@ def sha(path):
     return h.hexdigest()
 
 def main():
-    p=argparse.ArgumentParser(); p.add_argument('--attn',choices=['fa4','sdpa'],default='fa4'); p.add_argument('--repo',required=True); p.add_argument('--bits',type=int,choices=[0,4,8],required=True); p.add_argument('--receipt',required=True); p.add_argument('--group',type=int,default=0); p.add_argument('--int8',default=''); p.add_argument('--export-quant',action='store_true'); p.add_argument('--assets-manifest')
+    p=argparse.ArgumentParser(); p.add_argument('--attn',choices=['fa4','sdpa'],default='fa4'); p.add_argument('--repo',required=True); p.add_argument('--bits',type=int,choices=[0,4,8],required=True); p.add_argument('--receipt',required=True); p.add_argument('--group',type=int,default=0); p.add_argument('--int8',default=''); p.add_argument('--export-quant',action='store_true'); p.add_argument('--quant-state'); p.add_argument('--assets-manifest')
     args, native=p.parse_known_args()
     repo=Path(args.repo).resolve(); sys.path.insert(0,str(repo)); os.chdir(repo)
     attn_state=None
@@ -27,6 +27,13 @@ def main():
         report['encoder_snapshot']=verify_encoder(args.assets_manifest)
     def load(pipe,*a,**kw):
         phase=time.monotonic()
+        if args.quant_state:
+            ints=[t for t in args.int8.split(',') if t]
+            check_quant_args(args.quant_state,args.bits,args.group,ints)
+            report['quantization']=load_quantized(pipe.transformer,args.quant_state)
+            report['quantization_seconds']=time.monotonic()-phase
+            report['quantized_state']={'path':args.quant_state,'sha256':sha(args.quant_state),'loaded':True}
+            return None
         result=original(pipe,*a,**kw)
         report['checkpoint_load_seconds']=time.monotonic()-phase
         if args.bits:

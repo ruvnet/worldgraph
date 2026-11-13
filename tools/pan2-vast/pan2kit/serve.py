@@ -175,13 +175,14 @@ def make_handler(state, timeout):
 def main():
     import resource
     import torch
-    from pan2kit.quant import quantize
+    from pan2kit.quant import quantize, load_quantized, check_quant_args
     p = argparse.ArgumentParser()
     p.add_argument('--attn', choices=['fa4', 'sdpa'], default='fa4')
     p.add_argument('--repo', required=True)
     p.add_argument('--bits', type=int, choices=[0, 4, 8], required=True)
     p.add_argument('--group', type=int, default=0, help='scale group size for quantization (0 = per row)')
     p.add_argument('--int8', default='', help='comma list of matrix-name fragments kept at 8 bits when --bits 4')
+    p.add_argument('--quant-state', help='saved quantized state (pan2kit.quant-state/2); skips reading the BF16 checkpoint')
     p.add_argument('--host', default='127.0.0.1')
     p.add_argument('--port', type=int, default=18300)
     p.add_argument('--workdir', required=True)
@@ -221,6 +222,13 @@ def main():
 
     def load(pipe, *a, **kw):
         phase = time.monotonic()
+        if args.quant_state:
+            ints = [t for t in args.int8.split(',') if t]
+            check_quant_args(args.quant_state, args.bits, args.group, ints)
+            receipt['quantization'] = load_quantized(pipe.transformer, args.quant_state)
+            receipt['quantization_seconds'] = time.monotonic() - phase
+            receipt['quantized_state'] = args.quant_state
+            return None
         result = original_load(pipe, *a, **kw)
         receipt['checkpoint_load_seconds'] = time.monotonic() - phase
         if args.bits:

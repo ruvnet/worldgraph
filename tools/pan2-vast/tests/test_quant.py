@@ -3,7 +3,7 @@ import tempfile
 from pathlib import Path
 import torch
 from torch import nn
-from pan2kit.quant import quantize, save_quantized, load_quantized
+from pan2kit.quant import quantize, save_quantized, load_quantized, quant_meta, check_quant_args
 
 class Raw(nn.Module):
     def __init__(self):
@@ -44,7 +44,6 @@ class QuantTests(unittest.TestCase):
     def test_nonfinite(self):
         m=Model(); m.blocks[0].w.data[0,0]=float('nan')
         with self.assertRaises(ValueError): quantize(m,8)
-if __name__=='__main__': unittest.main()
 
 
 class GroupTests(unittest.TestCase):
@@ -76,3 +75,14 @@ class GroupTests(unittest.TestCase):
     def test_rejects_bad_group(self):
         for bad in (-2, 7, 1.5):
             with self.assertRaises(ValueError): quantize(Model(), 4, bad)
+
+    def test_saved_state_records_and_enforces_its_settings(self):
+        with tempfile.TemporaryDirectory() as d:
+            m = Model(); quantize(m, 4, 128, int8=('x',)); path = Path(d)/'s.safetensors'; save_quantized(m, path, 4, 128, ('x',))
+            self.assertEqual(quant_meta(path), (4, 128, ['x']))
+            check_quant_args(path, 4, 128, ['x'])
+            for bad in ((8, 128, ['x']), (4, 32, ['x']), (4, 128, [])):
+                with self.assertRaises(ValueError): check_quant_args(path, *bad)
+
+
+if __name__=='__main__': unittest.main()
