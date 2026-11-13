@@ -85,4 +85,15 @@ Update 2026-11-12 (RTX 5090, SDPA, released sampler: 50 steps, flow shift 9, gui
 
 Limits: one prompt and seed; INT8 is not BF16; the door does not open in any clip, so action following is untested; the 30 case evaluation is still the decision gate. Per class sensitivity was not run (only qkv alone at INT4 was, under the wrong prompt). Candidate service default: INT4 group 128, caps raised toward 49 frames at 480x832.
 
+Saved quantized state and end to end test (2026-11-13, RTX 5090, 108 GB host). `pan2-int4-g128.safetensors` (INT4, group 128, schema `pan2kit.quant-state/2`) is 17,203,491,128 bytes against 58 GB of BF16 weights, sha256 `b97f4347082050b8ffe627c8945a9964ddd3e5c513bc3b1e73b4e59c106b06df`; every tensor read back from the file equals the in-memory one. A worker with `PAN2_QUANT_STATE` skips the BF16 transformer download, builds the transformer on the meta device and assigns the packed tensors into it.
+
+| Measure | In-memory quantization | From the saved file |
+| :--- | :--- | :--- |
+| Ready after weights are on disk | 518 s (the CPU export ran concurrently, so this is inflated) | 2.7 s after the hash check, about 60 s end to end |
+| Host RAM at ready | 125 GB peak | 5.2 GB; the first attempt without the meta builder was OOM-killed at a 109 GB limit |
+| Door scene, 25 f, 256x448, 50 steps | `a8af39d2…` | `a8af39d2…`, byte-identical on a different host |
+| Nebula scene, 49 f, 480x832, 50 steps | `24634385…` | `6f476ddf…`, same size; SSIM 0.988, PSNR 46.4 dB, gate pass |
+
+The same server repeats the nebula clip byte for byte, so the small difference from the earlier nebula clip comes from the host or the load path, not run to run noise; the weights are provably identical, so a host effect is the likelier cause but is not separated. Service requests use the pipeline defaults (flow shift 5, guidance 4), not the 9 and 2.5 used in the sweep. Not run: a 24 GB card, and a BF16 reference for the nebula scene.
+
 See [ADR 210](210-pan2-serverless-service.md), [usage](../../tools/pan2-vast/METAHARNESS.md), [cost plan](../mission/pan2-quantization-cost-plan.md) and [ADR 207](207-pan2-physical-hypotheses.md).

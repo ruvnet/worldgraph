@@ -14,9 +14,13 @@ class RowQuant(nn.Module):
         self.group = min(group, width) if group else width
 
     def right_inverse(self, value):
+        g, ng = self.group, -(-self.width // self.group)
+        if value.device.type == 'meta':  # structure only: shapes for a saved state to be assigned into
+            cols = (self.width + 1)//2 if self.bits == 4 else self.width
+            return (torch.empty((value.shape[0], cols), dtype=torch.uint8 if self.bits == 4 else torch.int8, device='meta'),
+                    torch.empty((value.shape[0], ng), dtype=torch.float32, device='meta'))
         if value.device.type != 'cpu': raise ValueError('Quantize on CPU before GPU residency')
         limit = 7 if self.bits == 4 else 127
-        g, ng = self.group, -(-self.width // self.group)
         packed = torch.empty((value.shape[0], (self.width + 1)//2 if self.bits == 4 else self.width), dtype=torch.uint8 if self.bits == 4 else torch.int8)
         scales = torch.empty((value.shape[0], ng), dtype=torch.float32)
         rows = max(1, 4_000_000 // self.width)
@@ -103,5 +107,25 @@ def load_quantized(model, path):
         meta=f.metadata() or {}
     if meta.get('schema')!='pan2kit.quant-state/2': raise ValueError('Unsupported quant state schema')
     bits=int(meta['bits']); report=quantize(model,bits,int(meta['group']),json.loads(meta['int8']))
-    model.load_state_dict(load_file(str(path),device='cpu'),strict=True)
+    # A model built on the meta device holds no storage: take the loaded tensors as they are instead of copying.
+    meta=[n for n,p in model.named_parameters() if p.is_meta]
+    model.load_state_dict(load_file(str(path),device='cpu'),strict=True,assign=bool(meta))
+    left=[n for n,t in list(model.named_parameters())+list(model.named_buffers()) if t.is_meta]
+    if left: raise ValueError(f'{len(left)} tensors are still on the meta device after loading, e.g. {left[:3]}')
     return report
+
+
+def install_meta_builder(gen):
+    """Make upstream build the transformer on the meta device (no storage), for use with a saved quantized state.
+
+    Upstream builds the whole BF16 transformer in host memory and then overwrites it; with a saved state that is
+    58 GB of throwaway allocation. `load_quantized` fills a meta-built model with the packed tensors instead.
+    """
+    pipeline = gen.PanVideoPipeline
+    model_class = pipeline.build_transformer.__func__.__globals__['PanVideoDiffusionTransformer']
+    def build(cls, transformer_config_overrides=None, pretrained_transformer_path=None, load_transformer_weights=False,
+              transformer_dtype=torch.bfloat16, device=None):
+        with torch.device('meta'):
+            model = model_class.from_config(cls.architecture(transformer_config_overrides))
+        return model.to(dtype=transformer_dtype)
+    pipeline.build_transformer = classmethod(build)

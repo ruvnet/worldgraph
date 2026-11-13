@@ -1,7 +1,7 @@
 import argparse, hashlib, importlib.util, json, os, resource, sys, time
 from pathlib import Path
 import torch
-from pan2kit.quant import quantize, save_quantized, load_quantized, check_quant_args
+from pan2kit.quant import quantize, save_quantized, load_quantized, check_quant_args, install_meta_builder
 
 def sha(path):
     h=hashlib.sha256()
@@ -20,6 +20,7 @@ def main():
     spec=importlib.util.spec_from_file_location('pan_native_generate',repo/'generate.py')
     gen=importlib.util.module_from_spec(spec); spec.loader.exec_module(gen)
     if attn_state: attn_state.verify()
+    if args.quant_state: install_meta_builder(gen)
     original=gen.load_transformer_weights
     report={'attention_backend':args.attn,'compute_capability':list(torch.cuda.get_device_capability(0)),'torch_version':torch.__version__,'cuda_version':torch.version.cuda,'gpu':torch.cuda.get_device_name(0),'vram_bytes':torch.cuda.get_device_properties(0).total_memory,'status':'running','bits':args.bits,'quality_validation':'pending'}
     if args.assets_manifest:

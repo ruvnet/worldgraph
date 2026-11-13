@@ -85,4 +85,29 @@ class GroupTests(unittest.TestCase):
                 with self.assertRaises(ValueError): check_quant_args(path, *bad)
 
 
+    def test_meta_built_model_loads_the_same_weights_without_a_full_copy(self):
+        with tempfile.TemporaryDirectory() as d:
+            torch.manual_seed(1); real = Model(); quantize(real, 4, 32, int8=('out',))
+            path = Path(d)/'m.safetensors'; save_quantized(real, path, 4, 32, ('out',))
+            with torch.device('meta'):
+                lazy = Model()
+            self.assertTrue(all(p.is_meta for p in lazy.parameters()))
+            load_quantized(lazy, path)
+            self.assertFalse(any(t.is_meta for t in list(lazy.parameters()) + list(lazy.buffers())))
+            self.assertTrue(torch.equal(real.blocks[0].w, lazy.blocks[0].w))
+            self.assertTrue(torch.equal(real.out.weight, lazy.out.weight))
+            x = torch.ones(1, 65, dtype=torch.bfloat16)
+            self.assertTrue(torch.equal(real.blocks[0](x), lazy.blocks[0](x)))
+
+    def test_meta_model_with_a_missing_tensor_is_refused(self):
+        with tempfile.TemporaryDirectory() as d:
+            real = Model(); quantize(real, 8); path = Path(d)/'m.safetensors'; save_quantized(real, path, 8)
+            class Extra(Model):
+                def __init__(self):
+                    super().__init__(); self.extra = nn.Parameter(torch.zeros(2))
+            with torch.device('meta'):
+                lazy = Extra()
+            with self.assertRaises(Exception): load_quantized(lazy, path)
+
+
 if __name__=='__main__': unittest.main()

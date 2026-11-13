@@ -175,7 +175,7 @@ def make_handler(state, timeout):
 def main():
     import resource
     import torch
-    from pan2kit.quant import quantize, load_quantized, check_quant_args, save_quantized
+    from pan2kit.quant import quantize, load_quantized, check_quant_args, save_quantized, install_meta_builder
     p = argparse.ArgumentParser()
     p.add_argument('--attn', choices=['fa4', 'sdpa'], default='fa4')
     p.add_argument('--repo', required=True)
@@ -206,6 +206,8 @@ def main():
     spec.loader.exec_module(gen)
     if attn_state:
         attn_state.verify()
+    if args.quant_state:
+        install_meta_builder(gen)
 
     info = {'attention_backend': args.attn, 'bits': args.bits, 'group': args.group, 'int8': args.int8, 'gpu': torch.cuda.get_device_name(0),
             'compute_capability': list(torch.cuda.get_device_capability(0)), 'pan_commit': None}
