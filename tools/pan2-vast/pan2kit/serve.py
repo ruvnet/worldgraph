@@ -175,7 +175,7 @@ def make_handler(state, timeout):
 def main():
     import resource
     import torch
-    from pan2kit.quant import quantize, load_quantized, check_quant_args
+    from pan2kit.quant import quantize, load_quantized, check_quant_args, save_quantized
     p = argparse.ArgumentParser()
     p.add_argument('--attn', choices=['fa4', 'sdpa'], default='fa4')
     p.add_argument('--repo', required=True)
@@ -183,6 +183,7 @@ def main():
     p.add_argument('--group', type=int, default=0, help='scale group size for quantization (0 = per row)')
     p.add_argument('--int8', default='', help='comma list of matrix-name fragments kept at 8 bits when --bits 4')
     p.add_argument('--quant-state', help='saved quantized state (pan2kit.quant-state/2); skips reading the BF16 checkpoint')
+    p.add_argument('--export-quant', help='write the quantized state to this new file after quantizing, then keep serving')
     p.add_argument('--host', default='127.0.0.1')
     p.add_argument('--port', type=int, default=18300)
     p.add_argument('--workdir', required=True)
@@ -235,6 +236,9 @@ def main():
             phase = time.monotonic()
             receipt['quantization'] = quantize(pipe.transformer, args.bits, args.group, [t for t in args.int8.split(',') if t])
             receipt['quantization_seconds'] = time.monotonic() - phase
+            if args.export_quant:
+                save_quantized(pipe.transformer, args.export_quant, args.bits, args.group, [t for t in args.int8.split(',') if t])
+                receipt['exported_state'] = args.export_quant
         return result
     gen.load_transformer_weights = load
 
