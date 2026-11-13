@@ -1,6 +1,6 @@
 # ADR 210: PAN2 generation as a serverless service for the Spaces API
 
-Status: proposed. The Vast serverless worker is implemented and was verified end to end on 2026-11-12. The GCP gateway, job API, storage and quotas are not built. Nothing here is deployed to production.
+Status: proposed. The Vast serverless worker is implemented and was verified end to end on 2026-11-12. The Spaces job API, job store, quota, cache and worker function are implemented in cognitum-one/api#357 (ADR-108) and verified on the Firestore emulator against a stub backend; they are not deployed. Real Cloud Storage, scheduler, weights hosting and account erasure for job data are not done. Nothing here is deployed to production.
 
 ## Context
 
@@ -46,7 +46,7 @@ Generated clips at the smoke size are visually poor (ADR 209), so no quality cla
 
 | Item | Status |
 | :--- | :--- |
-| Gateway, job store, quotas, caching | not started |
+| Gateway, job store, quotas, caching | implemented in cognitum-one/api#357, emulator-verified with a stub backend, not deployed |
 | Rust route client and request schema | not started |
 | Precision for production (group-wise INT4 vs INT8) | waiting on the GPU sweep in ADR 209 |
 | Larger frame sizes and step counts | untested; INT8 memory headroom is near zero |
