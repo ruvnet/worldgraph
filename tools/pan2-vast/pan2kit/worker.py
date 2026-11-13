@@ -10,7 +10,7 @@ def sha(path):
     return h.hexdigest()
 
 def main():
-    p=argparse.ArgumentParser(); p.add_argument('--attn',choices=['fa4','sdpa'],default='fa4'); p.add_argument('--repo',required=True); p.add_argument('--bits',type=int,choices=[0,4,8],required=True); p.add_argument('--receipt',required=True); p.add_argument('--group',type=int,default=0); p.add_argument('--int8',default=''); p.add_argument('--export-quant',action='store_true'); p.add_argument('--quant-state'); p.add_argument('--assets-manifest')
+    p=argparse.ArgumentParser(); p.add_argument('--attn',choices=['fa4','sdpa'],default='fa4'); p.add_argument('--repo',required=True); p.add_argument('--bits',type=int,choices=[0,4,8],required=True); p.add_argument('--receipt',required=True); p.add_argument('--group',type=int,default=0); p.add_argument('--int8',default=''); p.add_argument('--export-quant',action='store_true'); p.add_argument('--quant-state'); p.add_argument('--export-only',action='store_true'); p.add_argument('--assets-manifest')
     args, native=p.parse_known_args()
     repo=Path(args.repo).resolve(); sys.path.insert(0,str(repo)); os.chdir(repo)
     attn_state=None
@@ -44,6 +44,16 @@ def main():
                 path=Path(args.receipt).with_name('quantized.safetensors')
                 save_quantized(pipe.transformer,path,args.bits,args.group,[t for t in args.int8.split(',') if t])
                 report['quantized_state']={'path':str(path),'sha256':sha(path)}
+                if args.export_only:
+                    # No generation: confirm the file holds exactly the in-memory state, record it, and stop.
+                    from safetensors.torch import load_file
+                    saved=load_file(str(path),device='cpu'); live=pipe.transformer.state_dict()
+                    bad=[k for k in live if k not in saved or not torch.equal(saved[k],live[k].detach().cpu())]
+                    report['quantized_state'].update(tensors=len(saved),bytes=path.stat().st_size,file_equals_memory=(not bad and set(saved)==set(live)),mismatches=bad[:10])
+                    report.update(status='exported',cpu_peak_rss_kib=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
+                    Path(args.receipt).write_text(json.dumps(report,indent=2)+'\n')
+                    print('PAN2_EXPORT_DONE',json.dumps(report['quantized_state']),flush=True)
+                    os._exit(0 if report['quantized_state']['file_equals_memory'] else 3)
         return result
     gen.load_transformer_weights=load
     original_call=gen.PanVideoPipeline.__call__
