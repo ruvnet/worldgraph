@@ -44,6 +44,7 @@ pub mod bridge;
 pub mod error;
 pub mod occupancy;
 pub mod runtime;
+pub mod conditioning;
 pub mod physical;
 
 // Re-export the bridge type at the crate root for convenience.

@@ -1,0 +1,37 @@
+{
+  "schema": "cognitum.reality.vast.canary.v1",
+  "endpoint": {
+    "endpoint_name": "reality-canary",
+    "endpoint_state": "stopped",
+    "min_load": 0,
+    "min_cold_load": 0,
+    "cold_workers": 0,
+    "max_workers": 1,
+    "max_queue_time": 2,
+    "target_queue_time": 0.5,
+    "inactivity_timeout": 60
+  },
+  "worker": {
+    "pyworker_commit": "0000000000000000000000000000000000000000",
+    "image_sha256": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "checkpoint_sha256": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "gpu_class": "H200 NVL",
+    "minimum_vram_gb": 140,
+    "route": "/v1/reality/render",
+    "model_license_review": false
+  },
+  "budget": {
+    "max_gpu_usd_per_hour": 4,
+    "max_worker_hours": 1,
+    "max_total_compute_usd": 4,
+    "quote_verified": false
+  },
+  "approvals": {
+    "gpu_spend_approval": null,
+    "hosted_data_processing_approval": null
+  },
+  "stop_control": {
+    "watchdog_verified": false,
+    "operator_receipt": null
+  }
+}
