@@ -103,6 +103,7 @@ test('hybrid coast renders, replays and withholds unsupported evidence',async({p
   await page.getByRole('button',{name:'Coast',exact:true}).click();
   await expect(page.getByRole('button',{name:'Coast',exact:true})).toHaveAttribute('aria-pressed','true');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await expect.poll(async()=>(await diagnostics(page)).frameSamples).toBeGreaterThan(3);
   const screenshot=info.outputPath(`hybrid-${info.project.name}.png`);
   await page.screenshot({path:screenshot,fullPage:false});
   await info.attach(`hybrid-${info.project.name}`,{path:screenshot,contentType:'image/png'});

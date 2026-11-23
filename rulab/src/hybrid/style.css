@@ -21,7 +21,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .coast-title p { margin: 0; font-size: 12px; line-height: 1.7; color: #ecf5e9; max-width: 310px; }
 .coast-provenance { display: inline-flex; gap: 7px; align-items: center; padding: 6px 9px; border: 1px solid #f5f6dc55; color: #fff8d6; border-radius: 4px; font: 9px ui-monospace, monospace; background: #223d3485; letter-spacing: .6px; margin-top: 17px; }
 .coast-provenance::before { content: ''; width: 5px; height: 5px; background: #e6d694; border-radius: 50%; }
-.coast-panel { position: absolute; right: 26px; top: 110px; width: 260px; padding: 19px; border: 1px solid #dfefdf26; border-radius: 12px; background: #142e2be8; box-shadow: 0 12px 45px #12312b30; backdrop-filter: blur(24px); }
+.coast-panel { position: absolute; right: 26px; top: 110px; width: 280px; max-height: calc(100dvh - 260px); overflow: auto; padding: 19px; border: 1px solid #dfefdf26; border-radius: 12px; background: #142e2be8; box-shadow: 0 12px 45px #12312b30; backdrop-filter: blur(24px); }
 .coast-panel h2 { font-size: 10px; letter-spacing: 1.8px; font-weight: 600; margin: 0 0 18px; }
 .coast-panel header { display: flex; justify-content: space-between; align-items: start; }
 .coast-panel header span { font: 9px ui-monospace, monospace; color: var(--coast-lime); }
@@ -63,10 +63,17 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .coast-mobile { display: none; }
 .coast-quality { display: flex; justify-content: space-between; align-items: center; font-size: 9px; color: #bad0c4; margin-top: 12px; }
 .coast-quality select { background: transparent; color: #e2efdf; font-size: 9px; border: 1px solid #72948266; border-radius: 4px; padding: 4px; }
+.coast-layer b { font-size: 14px; }
+.coast-layer small, .coast-runtime, .coast-evidence p, .coast-evidence label { font-size: 12px; }
+.coast-evidence select, .coast-quality, .coast-quality select, .coast-evidence .coast-btn, .coast-btn, .coast-play { font-size: 12px; }
+.coast-evidence select { padding: 9px; }
+.coast-measures small { font-size: 10px; }
+.coast-help { font-size: 10px; }
+.coast-provenance { font-size: 11px; }
 @media (max-width: 900px) {
  .coast-title { top: 100px; left: 22px; }
  .coast-title p { display: none; }
- .coast-panel { right: 18px; top: 100px; width: 225px; padding: 15px; }
+ .coast-panel { right: 18px; top: 100px; width: 265px; padding: 15px; }
  .coast-top { padding: 22px; }
  .coast-transport { width: calc(100% - 235px); }
  .coast-bottom { left: 22px; right: 18px; }
@@ -84,19 +91,19 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
  .coast-title h1 { font-size: 37px; margin: 7px 0; }
  .coast-eyebrow { font-size: 8px; }
  .coast-provenance { margin-top: 9px; font-size: 8px; }
- .coast-panel { top: auto; bottom: 147px; right: 13px; width: 180px; padding: 12px; }
+ .coast-panel { top: auto; bottom: 157px; right: 13px; width: 210px; max-height: calc(100dvh - 360px); padding: 12px; }
  .coast-panel h2 { font-size: 8px; margin-bottom: 9px; }
  .coast-panel header span { font-size: 8px; }
  .coast-layer { padding: 9px 0; gap: 8px; }
- .coast-layer b { font-size: 9px; }
- .coast-layer small { font-size: 8px; margin-top: 3px; }
+ .coast-layer b { font-size: 12px; }
+ .coast-layer small { font-size: 10px; margin-top: 3px; }
  .layer-symbol { width: 22px; height: 22px; font-size: 13px; }
  .coast-measures strong { font-size: 17px; }
  .coast-measures small { font-size: 7px; }
- .coast-runtime { font-size: 8px; line-height: 1.5; margin-top: 8px; }
+ .coast-runtime { font-size: 10px; line-height: 1.5; margin-top: 8px; }
  .coast-divider { margin: 9px 0; }
  .coast-quality { margin-top: 8px; }
- .coast-evidence p { font-size: 8px; }
+ .coast-evidence p { font-size: 11px; }
  .coast-bottom { left: 13px; right: 13px; bottom: 13px; gap: 9px; flex-wrap: wrap-reverse; }
  .coast-transport { width: 100%; padding: 10px 12px; }
  .coast-transport-top { gap: 5px; }
