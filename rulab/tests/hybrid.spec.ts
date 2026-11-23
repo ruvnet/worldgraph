@@ -103,6 +103,9 @@ test('hybrid coast renders, replays and withholds unsupported evidence',async({p
   await page.getByRole('button',{name:'Coast',exact:true}).click();
   await expect(page.getByRole('button',{name:'Coast',exact:true})).toHaveAttribute('aria-pressed','true');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  // Keep the final measurement configuration fixed while the screenshot is taken.
+  // Adaptive detail legitimately resets its measurement window on a resize.
+  await page.getByRole('combobox',{name:'Rendering detail'}).selectOption('performance');
   await expect.poll(async()=>(await diagnostics(page)).frameSamples).toBeGreaterThan(3);
   const screenshot=info.outputPath(`hybrid-${info.project.name}.png`);
   await page.screenshot({path:screenshot,fullPage:false});
