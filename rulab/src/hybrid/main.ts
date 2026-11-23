@@ -56,6 +56,7 @@ type Quality = 'auto' | 'performance' | 'quality';
 type Diagnostics = {
   schema: 'worldgraph.rulab.hybrid.evidence.v1'; source: 'synthetic'; sensorConnected: false;
   backend: string; renderer: string; resolution: [number, number]; pixelRatio: number;
+  shadowsEnabled: boolean; environmentLighting: boolean;
   time: number; camera: number[]; target: number[];
   layers: { splats: boolean; meshes: boolean; evidence: boolean };
   renderedLayers: { splats: boolean; staticMeshes: boolean; dynamicMeshes: boolean; evidence: boolean };
@@ -77,6 +78,9 @@ async function start() {
   const gl = canvas.getContext('webgl2', { alpha: false, antialias: false, powerPreference: 'high-performance' });
   if (!gl) throw new Error('This scene needs WebGL2. No reference image is substituted for a working renderer.');
   const renderer = new T.WebGLRenderer({ canvas, context: gl, antialias: false });
+  const ext = gl.getExtension('WEBGL_debug_renderer_info');
+  const device = String(ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER)).slice(0, 220);
+  const software = /swiftshader|llvmpipe|software/i.test(device);
   const cleanup: Array<() => void> = [() => renderer.dispose()];
   let disposed = false;
   const dispose = () => {
@@ -90,8 +94,8 @@ async function start() {
     renderer.debug.onShaderError = () => { startupShaderFailed = true; };
     renderer.outputColorSpace = T.SRGBColorSpace;
     renderer.toneMapping = T.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.08;
-    renderer.shadowMap.enabled = true;
+    renderer.toneMappingExposure = .95;
+    renderer.shadowMap.enabled = !software;
     renderer.shadowMap.type = T.PCFSoftShadowMap;
     const scene = new T.Scene();
     scene.background = new T.Color(0xb9d2cf);
@@ -115,22 +119,24 @@ async function start() {
       side: T.BackSide, depthWrite: false,
       uniforms: { top: { value: new T.Color(0x77b9d4) }, horizon: { value: new T.Color(0xece6c7) } },
       vertexShader: 'varying vec3 vDirection;void main(){vDirection=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-      fragmentShader: 'uniform vec3 top;uniform vec3 horizon;varying vec3 vDirection;void main(){vec3 n=normalize(vDirection);vec3 c=mix(horizon,top,smoothstep(-.04,.9,n.y));float sun=pow(max(dot(n,normalize(vec3(-.55,.55,.2))),0.),800.);gl_FragColor=vec4(c+sun*vec3(1.,.87,.56),1.);}',
+      fragmentShader: 'uniform vec3 top;uniform vec3 horizon;varying vec3 vDirection;void main(){vec3 n=normalize(vDirection);vec3 c=mix(horizon,top,smoothstep(-.04,.9,n.y));float sun=pow(max(dot(n,normalize(vec3(-.55,.55,.2))),0.),800.);gl_FragColor=vec4(c+sun*vec3(1.,.87,.56),1.);\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}',
     }));
     scene.add(sky);
     cleanup.push(() => { sky.geometry.dispose(); sky.material.dispose(); });
-    scene.add(new T.HemisphereLight(0xd9f1f1, 0xb19770, 2));
-    const sun = new T.DirectionalLight(0xffeccb, 3.4);
+    scene.add(new T.HemisphereLight(0xd9f1f1, 0xb19770, 1.2));
+    const sun = new T.DirectionalLight(0xffeccb, 2.6);
     sun.position.set(-50, 100, 35); sun.target.position.set(-5, 0, -10);
     sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
     Object.assign(sun.shadow.camera, { left: -90, right: 90, top: 100, bottom: -80, near: 1, far: 250 });
     sun.shadow.normalBias = .12; sun.shadow.bias = -.0003;
     scene.add(sun, sun.target); cleanup.push(() => sun.shadow.map?.dispose());
-    const environmentScene = new T.Scene(); environmentScene.add(sky.clone());
-    const pmrem = new T.PMREMGenerator(renderer);
-    const environment = pmrem.fromScene(environmentScene, .08, .1, 650);
-    scene.environment = environment.texture; scene.environmentIntensity = .6;
-    pmrem.dispose(); cleanup.push(() => environment.dispose());
+    if (!software) {
+      const environmentScene = new T.Scene(); environmentScene.add(sky.clone());
+      const pmrem = new T.PMREMGenerator(renderer);
+      const environment = pmrem.fromScene(environmentScene, .08, .1, 650);
+      scene.environment = environment.texture; scene.environmentIntensity = .6;
+      pmrem.dispose(); cleanup.push(() => environment.dispose());
+    }
     if (startupShaderFailed) throw new Error('GPU environment shader initialization failed.');
 
     const coast = createCoastalScene(); cleanup.push(() => coast.dispose());
@@ -150,15 +156,12 @@ async function start() {
       if (!disposed) { graph.sync(time, coast.actorStates(time)); updateGraphLabel(); }
     }).catch(() => { if (!disposed) $('coast-graph').textContent = 'Rust graph unavailable'; });
 
-    const ext = gl.getExtension('WEBGL_debug_renderer_info');
-    const device = String(ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER)).slice(0, 220);
-    const software = /swiftshader|llvmpipe|software/i.test(device);
     $('coast-device').textContent = software ? 'WebGL2 · software rendering' : 'WebGL2 · this device only';
     $('coast-device').title = device;
     $('coast-splats').textContent = `${coast.splatCount.toLocaleString()} authored Gaussians`;
 
     const layers = { splats: true, meshes: true, evidence: false };
-    let quality: Quality = 'auto', ratio = Math.min(devicePixelRatio || 1, 1.25);
+    let quality: Quality = 'auto', ratio = Math.min(devicePixelRatio || 1, software ? .45 : 1.25);
     let time = 0, playing = !matchMedia('(prefers-reduced-motion: reduce)').matches;
     let caseName: EvidenceCase = 'located', held = false, snapshot: EvidenceSnapshot | undefined;
     let projection = projectEvidence(null, context, Date.now());
@@ -231,6 +234,7 @@ async function start() {
       return {
         schema: 'worldgraph.rulab.hybrid.evidence.v1', source: 'synthetic', sensorConnected: false,
         backend: 'webgl2', renderer: device, resolution: [canvas.width, canvas.height], pixelRatio: ratio,
+        shadowsEnabled: renderer.shadowMap.enabled, environmentLighting: scene.environment !== null,
         time, camera: camera.position.toArray(), target: controls.target.toArray(), layers: { ...layers },
         renderedLayers: { splats: coast.splats.visible, staticMeshes: coast.staticMeshes.visible, dynamicMeshes: coast.dynamicMeshes.visible, evidence: evidenceLayer.visible },
         splatCount: coast.splatCount, drawCalls: renderer.info.render.calls, frameSamples: samples.length,
@@ -243,7 +247,7 @@ async function start() {
 
     function renderUi() {
       const stats = frameStats();
-      $('coast-fps').textContent = stats.fps === null ? '…' : stats.fps.toFixed(0);
+      $('coast-fps').textContent = stats.fps === null ? '…' : stats.fps.toFixed(stats.fps < 10 ? 1 : 0);
       $('coast-p95').textContent = stats.p95FrameMs === null ? '…' : stats.p95FrameMs.toFixed(1);
       $('coast-time').textContent = `${Math.floor(time / 60).toString().padStart(2, '0')}:${(time % 60).toFixed(1).padStart(4, '0')} / 02:00`;
       $<HTMLInputElement>('coast-time-input').value = String(time);
@@ -279,8 +283,8 @@ async function start() {
     });
     bind($('coast-quality'), 'change', () => {
       quality = $<HTMLSelectElement>('coast-quality').value as Quality;
-      ratio = Math.min(devicePixelRatio || 1, quality === 'quality' ? 1.5 : quality === 'performance' ? .65 : 1.25);
-      renderer.shadowMap.enabled = quality !== 'performance'; resize(); samples.length = 0;
+      ratio = Math.min(devicePixelRatio || 1, quality === 'quality' ? 1.5 : quality === 'performance' ? (software ? .35 : .65) : (software ? .45 : 1.25));
+      renderer.shadowMap.enabled = quality === 'quality' || (!software && quality !== 'performance'); resize(); samples.length = 0;
     });
     document.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach(button => bind(button, 'click', () => preset(button.dataset.preset as keyof typeof PRESETS)));
     const acceptedCamera = camera.position.clone(), acceptedTarget = controls.target.clone();
@@ -354,7 +358,7 @@ async function start() {
       if (stamp - lastUi >= 400) { renderUi(); lastUi = stamp; }
       if (quality === 'auto' && stamp - lastAdjust >= 5000 && samples.length > 20) {
         const recent = samples.slice(-30); const mean = recent.reduce((sum, value) => sum + value, 0) / recent.length;
-        const next = mean > 36 ? Math.max(.6, ratio - .15) : mean < 18 ? Math.min(1.25, devicePixelRatio || 1, ratio + .1) : ratio;
+        const next = mean > 36 ? Math.max(software ? .35 : .6, ratio - .15) : mean < 18 ? Math.min(software ? .65 : 1.25, devicePixelRatio || 1, ratio + .1) : ratio;
         if (Math.abs(next - ratio) > .01) { ratio = next; resize(); }
         lastAdjust = stamp;
       }

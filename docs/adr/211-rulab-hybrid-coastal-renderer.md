@@ -39,6 +39,8 @@ No remote inference, GPU billing, raw sensor ingestion, cloud snapshot write, se
 
 Authored Gaussian allocation is capped at 65,000. The scene stays in local metre coordinates. Pixel ratio is capped and adaptive; measurements are cleared when resolution, detail or visible layers change. The evidence record includes device renderer, buffer resolution, current configuration, raw frame intervals and source declaration. P95 at or below 33.3 ms is a proposed device acceptance target, not an asserted result. Software browser rendering does not establish physical GPU performance.
 
+Recognized software renderers begin at pixel ratio 0.45 with shadows and environment convolution disabled. Adaptive software ratio stays between 0.35 and 0.65; physical GPU ratio uses a separate 0.6 to 1.25 range. Quality selection can explicitly request more pixels and shadows. Diagnostics retain actual resolution, shadow and environment state. This fallback improves inspectability on CPU rendering; it does not establish a 30 FPS result.
+
 Spark documents 16 bytes per compact Gaussian and 32 bytes for extended encoding, before auxiliary buffers, spherical harmonics and other memory [4]. Transparent overdraw and screen resolution can dominate even below a nominal splat count budget [5]. Avoid interpreting file size or this scene's count as a complete memory estimate.
 
 The existing bounded PLY, SPLAT and SPZ importer remains in the laboratory. RAD import stays disabled. Imported capture registration is not inferred by this change. The coastal page has no asset URL ingestion or network evidence interface.
