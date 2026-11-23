@@ -144,3 +144,11 @@ The source package declares `worldgraphs` version 0.1.3. This change does not pu
 Physical mobile GPU performance, reconstruction quality, and prediction accuracy are unmeasured. Frame samples report the current device and scene only. They do not establish 30 or 60 FPS on other devices, nor do software rendered browser tests establish physical GPU performance.
 
 Acceptance test: play to 10 seconds, pause the AMR, open the RF door, advance to 20 seconds, then export the experiment and Rust graph. Restore the experiment and seek to 20 seconds. Object identities, poses, door state, and the Rust graph snapshot must match. Translate the camera while time is paused and confirm actual spatial parallax. Run `node bin/cli.js rulab verify` on the same clean commit and retain its complete report.
+
+## Hybrid coastal world
+
+Open `hybrid.html` from the same build, or use the coastal world control in the laboratory header. The original synthetic scene combines Gaussian appearance, mesh actors, explicit local collision proxies and a separate synthetic evidence overlay. It contains no live sensing or trained dynamics. The actual Rust WASM graph holds seven synthetic nodes and six stable relationships. See [ADR 211](../docs/adr/211-rulab-hybrid-coastal-renderer.md) for the renderer decision, boundaries and acceptance.
+
+Use the three layer switches to compare appearance, geometry and eligible evidence. Pause or scrub the 120 second replay; the camera remains independent. In the evidence panel choose count only, expired source, registration mismatch or changed privacy epoch. Hold the synthetic feed to verify that positions disappear when source eligibility expires. Export evidence to retain the current device renderer, measured frame intervals, pixel resolution, configuration and synthetic Rust graph. These measurements do not establish physical mobile GPU performance.
+
+For a system Chromium installation, run browser tests with `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/absolute/path/to/chromium npm run test:e2e`. Omit the variable to retain the default pinned Playwright browser.

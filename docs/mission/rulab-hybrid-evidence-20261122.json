@@ -1,0 +1,143 @@
+{
+  "sourceCommit": "9b260930585078b5f81525c7206b6ffcc1129e01",
+  "browserExit": 0,
+  "profiles": [
+    {
+      "project": "mobile-chromium",
+      "viewport": {
+        "width": 412,
+        "height": 839
+      },
+      "diagnostics": {
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+        "resolution": [
+          144,
+          293
+        ],
+        "pixelRatio": 0.35,
+        "shadowsEnabled": false,
+        "environmentLighting": false,
+        "splatCount": 39980,
+        "drawCalls": 60,
+        "frameSamples": 20,
+        "frameTimesMs": [
+          1016.7000000000007,
+          16.69999999999891,
+          999.8999999999996,
+          1083.2999999999993,
+          516.6000000000022,
+          633.2999999999993,
+          833.4000000000015,
+          699.8999999999978,
+          1066.6000000000022,
+          883.3999999999978,
+          816.5,
+          500,
+          550,
+          700,
+          716.7000000000007,
+          50,
+          899.9000000000015,
+          49.89999999999782,
+          533.4000000000015,
+          750
+        ],
+        "fps": 1.501929980024331,
+        "p95FrameMs": 1066.6000000000022,
+        "graphStatus": "ready",
+        "graphNodes": 7,
+        "quality": "performance"
+      },
+      "pageErrors": [],
+      "receiptSha256": "dd209e193bdbe3152449c712d1d0c3f460ee992691f238a053cc7b4ec54e8fc8",
+      "screenshotSha256": "99bfdde0572f3cf087409f66ead46fec1c671857a15ca4af8bad02186874d8bb"
+    },
+    {
+      "project": "desktop-chromium",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "diagnostics": {
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+        "resolution": [
+          503,
+          350
+        ],
+        "pixelRatio": 0.35,
+        "shadowsEnabled": false,
+        "environmentLighting": false,
+        "splatCount": 39980,
+        "drawCalls": 60,
+        "frameSamples": 21,
+        "frameTimesMs": [
+          1099.8999999999978,
+          116.79999999999927,
+          16.5,
+          2433.4000000000015,
+          133.29999999999927,
+          1649.9000000000015,
+          16.599999999998545,
+          916.7000000000007,
+          1966.5999999999985,
+          2766.5,
+          1316.6000000000022,
+          166.70000000000073,
+          1316.5999999999985,
+          1033.300000000003,
+          1366.5999999999985,
+          983.2999999999956,
+          83.40000000000146,
+          1883.2000000000044,
+          83.29999999999563,
+          883.3000000000029,
+          50.099999999998545
+        ],
+        "fps": 1.0353702188082397,
+        "p95FrameMs": 2433.4000000000015,
+        "graphStatus": "ready",
+        "graphNodes": 7,
+        "quality": "performance"
+      },
+      "pageErrors": [],
+      "receiptSha256": "252797bfd845f8c75ae5ba2adfd0ccb4b47ee6501286581e77d79811568d0371",
+      "screenshotSha256": "370840a0767922dd99888db2cfb6ff862b78abd8050bf953dce11aa6bb289ff2"
+    }
+  ],
+  "recordType": "automated interaction sample; not a physical GPU benchmark",
+  "runtimeSourceCommit": "d8f91e4c42e7750a2b1e26c1841f44c262b04444",
+  "units": {
+    "frameTimesMs": "milliseconds",
+    "fps": "render loop frames per second"
+  },
+  "acceptance": {
+    "functionalBrowserPassed": true,
+    "physicalGpuMeasured": false,
+    "thirtyFpsEstablished": false,
+    "liveSensing": false,
+    "neuralInference": false,
+    "fullReleaseGate": "RuLab 4D workflow 45091151551 still in progress at evidence recording. General CI 45091151686 passed all five jobs, including full Rust workspace tests and Clippy. Local full workspace attempt hit sandbox socket errors in two unchanged sidecar tests."
+  },
+  "ci": {
+    "commit": "9b260930585078b5f81525c7206b6ffcc1129e01",
+    "general": {
+      "runId": 45091151686,
+      "url": "https://github.com/ruvnet/worldgraph/actions/runs/45091151686",
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        "live-demo-e2e",
+        "agent-harness",
+        "supersplat-bridge",
+        "rust",
+        "container"
+      ]
+    },
+    "rulab": {
+      "runId": 45091151551,
+      "url": "https://github.com/ruvnet/worldgraph/actions/runs/45091151551",
+      "status": "in_progress",
+      "conclusion": null
+    }
+  }
+}
